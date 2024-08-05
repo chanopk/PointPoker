@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -24,13 +25,22 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.chanop.pointpoker.ui.theme.PointPokerTheme
@@ -51,13 +61,10 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun HomeScreen(modifier: Modifier = Modifier) {
-
-    // TODO get from firebase
-    var roomName = listOf("Room1", "Room2", "Room3", "Room4",
-        "Room1", "Room2", "Room3", "Room4",
-        "Room1", "Room2", "Room3", "Room4",
-        "Room1", "Room2", "Room3", "Room4")
+fun HomeScreen(modifier: Modifier = Modifier, viewModel: MainViewModel = MainViewModel()) {
+    val context = LocalContext.current
+    var username by remember { mutableStateOf(viewModel.getUserName(context)) }
+    viewModel.getRooms()
 
     Box(modifier = modifier.fillMaxSize(),
         ){
@@ -66,18 +73,27 @@ fun HomeScreen(modifier: Modifier = Modifier) {
             Text(modifier = Modifier.padding(horizontal = 24.dp, vertical = 32.dp),
                 text = "Point Poker")
 
+            Row(modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically) {
+                TextField(modifier = Modifier.fillMaxWidth(),
+                    value = username,
+                    onValueChange = {username = it })
+
+            }
+
             Box(modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp, vertical = 8.dp)) {
-                Text(modifier = Modifier.align(Alignment.CenterStart)
-                    .clickable {
-                        getData()
-                    },
+                Text(modifier = Modifier.align(Alignment.CenterStart),
                     text = "Room")
 
-                Row(modifier = Modifier.align(Alignment.CenterEnd)
+                Row(modifier = Modifier
+                    .align(Alignment.CenterEnd)
                     .clickable {
-                        testFirebase()
+                        viewModel.createRoom(context, "TestRoom1", username)
                     },
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -86,25 +102,25 @@ fun HomeScreen(modifier: Modifier = Modifier) {
                 }
             }
 
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 144.dp),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
-            ) {
-                items(roomName) {
-                    RoomView(it)
-                }
-            }
+            AllRoomView(viewModel = viewModel)
         }
+    }
+}
 
-//        LazyRow(
-//            contentPadding = PaddingValues(8.dp)
-//        ) {
-//            items(roomName) {
-//                RoomView(it)
-//            }
-//        }
+@Composable
+fun AllRoomView(viewModel: MainViewModel) {
+    val allRoom by viewModel.allRoom.collectAsState()
+
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = 144.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        items(allRoom) {
+            val roomName = (it.data?.get("name") as? String) ?: ""
+            RoomView(roomName)
+        }
     }
 }
 
@@ -122,60 +138,6 @@ fun RoomView(roomName: String, modifier: Modifier = Modifier) {
             Text(modifier = Modifier.align(Alignment.BottomCenter),
                 text = roomName)
         }
-    }
-}
-
-fun testFirebase() {
-    val db = Firebase.firestore
-
-    val chanop = hashMapOf(
-        "username" to "chanop",
-        "role" to "leader",
-        "voted" to "",
-    )
-
-    val room = hashMapOf(
-        "average point" to 0,
-        "user" to listOf(chanop),
-    )
-
-    db.collection("room name")
-//        .document("Test")
-        .add(room)
-        .addOnSuccessListener {
-            Log.d(TAG, "Success")
-        }
-        .addOnFailureListener { e ->
-            Log.w(TAG, "Error adding data", e)
-        }
-}
-
-fun testAddDoc() {
-    val db = Firebase.firestore
-    val user = hashMapOf(
-        "first" to "Ada3",
-        "last" to "Lovelace3",
-        "born" to 18152,
-    )
-
-    // Add a new document with a generated ID
-    db.collection("users")
-        .add(user)
-        .addOnSuccessListener { documentReference ->
-            Log.d(TAG, "DocumentSnapshot added with ID: ${documentReference.id}")
-        }
-        .addOnFailureListener { e ->
-            Log.w(TAG, "Error adding document", e)
-        }
-}
-
-fun getData() {
-    val db = Firebase.firestore
-    val collectionRef = db.collection("Rooms") // Reference to the collection
-
-    collectionRef.addSnapshotListener{ snapshot, error ->
-        Log.i("test", snapshot.toString())
-        Log.i("test", error.toString())
     }
 }
 
