@@ -111,13 +111,36 @@ class MainViewModel: ViewModel() {
                     }
             } else {
                 // TODO alert some user error
+                // TODO room empty
             }
         }
     }
 
-    fun joinRoom(context: Context, name: String) {
+    fun joinRoom(context: Context, roomID: String, name: String) {
         isUserReady(context, name) { isReady ->
+            if (isReady) {
+                val userID = SharedPreferencesUtils.getString(context, SharedPreferencesUtils.userID)
+                val user = hashMapOf(
+                    "name" to name,
+                )
 
+                val db = Firebase.firestore
+                val refRooms = db.collection("Rooms")
+                val refRoom = refRooms.document(roomID)
+                val refMembers = refRoom.collection("Members")
+
+                refMembers.document(userID)
+                    .set(user)
+                    .addOnSuccessListener {
+                        it
+                    }
+                    .addOnFailureListener { e ->
+                        e
+                    }
+            } else {
+                // TODO alert some user error
+                // TODO room empty
+            }
         }
     }
 
@@ -135,7 +158,9 @@ class MainViewModel: ViewModel() {
             snapshot?.documentChanges?.forEach { documentChange ->
                 when(documentChange.type) {
                     DocumentChange.Type.ADDED -> {
-                        tmpAllRoom.add(documentChange.document)
+                        if (tmpAllRoom.find { it.id == documentChange.document.id } == null) {
+                            tmpAllRoom.add(documentChange.document)
+                        }
                     }
                     DocumentChange.Type.MODIFIED -> {
                         val index = tmpAllRoom.indexOfFirst { it.id == documentChange.document.id }
