@@ -11,6 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.chanop.pointpoker.screen.HomeScreen
 import com.chanop.pointpoker.ui.screen.CreateRoomScreen
+import com.chanop.pointpoker.ui.screen.RoomScreen
 import com.chanop.pointpoker.ui.theme.PointPokerTheme
 
 class MainActivity : ComponentActivity() {
@@ -29,6 +30,7 @@ class MainActivity : ComponentActivity() {
 fun NavControllerView() {
     // TODO optimize lifccycle , viewModel
     val mainViewModel = MainViewModel()
+    mainViewModel.getRooms()
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = "home") {
         composable("home") {
@@ -38,7 +40,14 @@ fun NavControllerView() {
             val name = backStackEntry.arguments?.getString("username") ?: ""
             CreateRoomScreen(navController = navController, viewModel = mainViewModel, username = name)
         }
+        composable("room/{roomid}") { backStackEntry ->
+            val roomId = backStackEntry.arguments?.getString("roomid") ?: ""
+            RoomScreen(navController = navController, viewModel = mainViewModel, roomId = roomId)
+        }
+
     }
+
+
 }
 
 @Preview(showBackground = true)

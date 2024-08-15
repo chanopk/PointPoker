@@ -17,6 +17,9 @@ class MainViewModel: ViewModel() {
     private val _allRoom = MutableStateFlow<List<DocumentSnapshot>>(emptyList())
     val allRoom: StateFlow<List<DocumentSnapshot>> = _allRoom.asStateFlow()
 
+    private val _currentRoom = MutableStateFlow<List<DocumentSnapshot>>(emptyList())
+    val currentRoom: StateFlow<List<DocumentSnapshot>> = _currentRoom.asStateFlow()
+
     fun isUserReady(context: Context, name: String, callback: (Boolean) -> Unit) {
         if (name.isEmpty()) {
             callback.invoke(false)
@@ -177,5 +180,40 @@ class MainViewModel: ViewModel() {
 
             _allRoom.value = tmpAllRoom
         }
+    }
+
+    fun getRoom(roomId: String): DocumentSnapshot? {
+
+        val db = Firebase.firestore
+        val collectionRef = db.collection("Rooms")
+        val documentRef = collectionRef.document(roomId)
+        val membersCollectionRef = documentRef.collection("Members")
+
+        membersCollectionRef.addSnapshotListener{ snapshot, error ->
+            val tmpAllCurrentRoom = arrayListOf<DocumentSnapshot>()
+            snapshot?.documentChanges?.forEach { documentChange ->
+                when(documentChange.type) {
+                    DocumentChange.Type.ADDED -> {
+                        if (tmpAllCurrentRoom.find { it.id == documentChange.document.id } == null) {
+                            tmpAllCurrentRoom.add(documentChange.document)
+                        }
+                    }
+                    DocumentChange.Type.MODIFIED -> {
+                        val index = tmpAllCurrentRoom.indexOfFirst { it.id == documentChange.document.id }
+                        tmpAllCurrentRoom.removeAt(index)
+                        tmpAllCurrentRoom.add(index, documentChange.document)
+                    }
+                    DocumentChange.Type.REMOVED -> {
+                        val index = tmpAllCurrentRoom.indexOfFirst { it.id == documentChange.document.id }
+                        tmpAllCurrentRoom.removeAt(index)
+                    }
+                    else -> {}
+                }
+            }
+
+            _currentRoom.value = tmpAllCurrentRoom
+        }
+
+        return allRoom.value.find { it.id == roomId }
     }
 }

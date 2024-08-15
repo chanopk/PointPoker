@@ -20,6 +20,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,8 +41,16 @@ fun HomeScreen(
     viewModel: MainViewModel
 ) {
     val context = LocalContext.current
+
+    // example
+    val isLoading = remember { mutableStateOf( true ) }
+    LaunchedEffect(isLoading.value) {
+        if (isLoading.value) {
+            isLoading.value = false
+        }
+    }
+
     var username by remember { mutableStateOf(viewModel.getUserName(context)) }
-    viewModel.getRooms()
 
     Box(
         modifier = modifier.fillMaxSize(),
@@ -89,13 +98,13 @@ fun HomeScreen(
                 }
             }
 
-            AllRoomView(viewModel = viewModel, username = username)
+            AllRoomView(navController = navController, viewModel = viewModel, username = username)
         }
     }
 }
 
 @Composable
-fun AllRoomView(viewModel: MainViewModel, username: String) {
+fun AllRoomView(navController: NavController, viewModel: MainViewModel, username: String) {
     val allRoom by viewModel.allRoom.collectAsState()
 
     LazyVerticalGrid(
@@ -105,13 +114,13 @@ fun AllRoomView(viewModel: MainViewModel, username: String) {
             .padding(16.dp)
     ) {
         items(allRoom) {
-            RoomView(viewModel = viewModel, documentSnapshot = it, username = username)
+            RoomView(navController = navController, viewModel = viewModel, documentSnapshot = it, username = username)
         }
     }
 }
 
 @Composable
-fun RoomView(modifier: Modifier = Modifier, viewModel: MainViewModel, documentSnapshot: DocumentSnapshot, username: String) {
+fun RoomView(navController: NavController, modifier: Modifier = Modifier, viewModel: MainViewModel, documentSnapshot: DocumentSnapshot, username: String) {
     val context = LocalContext.current
     val roomName = (documentSnapshot.data?.get("name") as? String) ?: ""
 
@@ -120,8 +129,9 @@ fun RoomView(modifier: Modifier = Modifier, viewModel: MainViewModel, documentSn
             .width(128.dp)
             .height(200.dp)
             .clickable {
-                // TODO create ui
                 viewModel.joinRoom(context, documentSnapshot.id, username)
+                // TODO loading
+                navController.navigate("room/${documentSnapshot.id}")
             }
             .padding(8.dp)
     ) {
