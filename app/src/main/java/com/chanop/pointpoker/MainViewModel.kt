@@ -17,8 +17,11 @@ class MainViewModel: ViewModel() {
     private val _allRoom = MutableStateFlow<List<DocumentSnapshot>>(emptyList())
     val allRoom: StateFlow<List<DocumentSnapshot>> = _allRoom.asStateFlow()
 
-    private val _currentRoom = MutableStateFlow<List<DocumentSnapshot>>(emptyList())
-    val currentRoom: StateFlow<List<DocumentSnapshot>> = _currentRoom.asStateFlow()
+    private val _currentRoom = MutableStateFlow<DocumentSnapshot?>(null)
+    val currentRoom: StateFlow<DocumentSnapshot?> = _currentRoom.asStateFlow()
+
+    private val _currentMembers = MutableStateFlow<List<DocumentSnapshot>>(emptyList())
+    val currentMembers: StateFlow<List<DocumentSnapshot>> = _currentMembers.asStateFlow()
 
     fun isUserReady(context: Context, name: String, callback: (Boolean) -> Unit) {
         if (name.isEmpty()) {
@@ -49,6 +52,10 @@ class MainViewModel: ViewModel() {
                 }
             }
         }
+    }
+
+    fun checkUserId(context: Context, userID: String?): Boolean {
+        return SharedPreferencesUtils.getString(context, SharedPreferencesUtils.userID) == userID
     }
 
     fun createUser(context: Context, name: String, success: (Boolean) -> Unit) {
@@ -98,7 +105,7 @@ class MainViewModel: ViewModel() {
                 val room = hashMapOf(
                     "name" to roomName,
                     "leader" to userID,
-                    "points" to listOf(0.5,1,1.5,2,3,5,8)
+                    "points" to listOf(0.5,1.0,1.5,2.0,3.0,5.0,8.0)
                 )
 
                 val db = Firebase.firestore
@@ -182,38 +189,121 @@ class MainViewModel: ViewModel() {
         }
     }
 
-    fun getRoom(roomId: String): DocumentSnapshot? {
-
+    fun getCurrentRoom(roomId: String) {
+        val db = Firebase.firestore
+        val collectionRef = db.collection("Rooms")
+        val documentRef = collectionRef.document(roomId)
+        documentRef.addSnapshotListener{ snapshot, error ->
+            _currentRoom.value = snapshot
+        }
+    }
+    fun getCurrentMember(roomId: String) {
         val db = Firebase.firestore
         val collectionRef = db.collection("Rooms")
         val documentRef = collectionRef.document(roomId)
         val membersCollectionRef = documentRef.collection("Members")
 
         membersCollectionRef.addSnapshotListener{ snapshot, error ->
-            val tmpAllCurrentRoom = arrayListOf<DocumentSnapshot>()
+            val tmpAllCurrentMembers = arrayListOf<DocumentSnapshot>()
+            tmpAllCurrentMembers.addAll(_currentMembers.value)
             snapshot?.documentChanges?.forEach { documentChange ->
                 when(documentChange.type) {
                     DocumentChange.Type.ADDED -> {
-                        if (tmpAllCurrentRoom.find { it.id == documentChange.document.id } == null) {
-                            tmpAllCurrentRoom.add(documentChange.document)
+                        if (tmpAllCurrentMembers.find { it.id == documentChange.document.id } == null) {
+                            tmpAllCurrentMembers.add(documentChange.document)
                         }
                     }
                     DocumentChange.Type.MODIFIED -> {
-                        val index = tmpAllCurrentRoom.indexOfFirst { it.id == documentChange.document.id }
-                        tmpAllCurrentRoom.removeAt(index)
-                        tmpAllCurrentRoom.add(index, documentChange.document)
+                        val index = tmpAllCurrentMembers.indexOfFirst { it.id == documentChange.document.id }
+                        tmpAllCurrentMembers.removeAt(index)
+                        tmpAllCurrentMembers.add(index, documentChange.document)
                     }
                     DocumentChange.Type.REMOVED -> {
-                        val index = tmpAllCurrentRoom.indexOfFirst { it.id == documentChange.document.id }
-                        tmpAllCurrentRoom.removeAt(index)
+                        val index = tmpAllCurrentMembers.indexOfFirst { it.id == documentChange.document.id }
+                        tmpAllCurrentMembers.removeAt(index)
                     }
                     else -> {}
                 }
             }
 
-            _currentRoom.value = tmpAllCurrentRoom
+            _currentMembers.value = tmpAllCurrentMembers
         }
+    }
 
-        return allRoom.value.find { it.id == roomId }
+    fun voteAtRoom(context: Context, roomID: String, point: Double) {
+        val username = SharedPreferencesUtils.getString(context, SharedPreferencesUtils.userName)
+        val userID = SharedPreferencesUtils.getString(context, SharedPreferencesUtils.userID)
+        val vote = hashMapOf(
+            "name" to username,
+            "point" to point
+        )
+
+        val db = Firebase.firestore
+        val refRooms = db.collection("Rooms")
+        val refRoom = refRooms.document(roomID)
+        val refMembers = refRoom.collection("Members")
+
+        refMembers.document(userID)
+            .set(vote)
+            .addOnSuccessListener {
+                it
+            }
+            .addOnFailureListener { e ->
+                e
+            }
+    }
+
+    fun clearRoom() {
+        _currentRoom.value = null
+        _currentMembers.value = arrayListOf<DocumentSnapshot>()
+    }
+
+    fun calAveragePoint(roomId: String) {
+        //TODO optimize
+        val sumPoint = _currentMembers.value.sumOf { it.data?.get("point") as? Double ?: 0.0 }
+        val averagePoint = sumPoint/_currentMembers.value.size
+
+        val room = hashMapOf(
+            "average_point" to averagePoint,
+            "leader" to (_currentRoom.value?.data?.get("leader") ?: ""),
+            "name" to (_currentRoom.value?.data?.get("name") ?: ""),
+            "points" to (_currentRoom.value?.data?.get("points") ?: listOf<Double>()),
+        )
+
+        val db = Firebase.firestore
+        val refCollection = db.collection("Rooms")
+        val refDocument = refCollection.document(roomId)
+
+        refDocument
+            .set(room)
+            .addOnSuccessListener {
+                it
+            }
+            .addOnFailureListener { e ->
+                e
+            }
+    }
+
+    fun resetAveragePoint(roomId: String) {
+        val room = hashMapOf(
+            "leader" to (_currentRoom.value?.data?.get("leader") ?: ""),
+            "name" to (_currentRoom.value?.data?.get("name") ?: ""),
+            "points" to (_currentRoom.value?.data?.get("points") ?: listOf<Double>()),
+        )
+
+        val db = Firebase.firestore
+        val refCollection = db.collection("Rooms")
+        val refDocument = refCollection.document(roomId)
+
+        refDocument
+            .set(room)
+            .addOnSuccessListener {
+                it
+            }
+            .addOnFailureListener { e ->
+                e
+            }
+
+        //TODO reset point of user
     }
 }
