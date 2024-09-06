@@ -74,7 +74,6 @@ class MainViewModel: ViewModel() {
                 success.invoke(true)
             }
             .addOnFailureListener { e ->
-                Log.w(ContentValues.TAG, "Error adding User", e)
                 success.invoke(false)
             }
     }
@@ -98,35 +97,38 @@ class MainViewModel: ViewModel() {
             }
     }
 
-    fun createRoom(context: Context, roomName: String, userName: String) {
-        isUserReady(context, userName) { isReady ->
-            if (isReady) {
-                val userID = SharedPreferencesUtils.getString(context, SharedPreferencesUtils.userID)
-                val room = hashMapOf(
-                    "name" to roomName,
-                    "leader" to userID,
-                    "points" to listOf(0.5,1.0,1.5,2.0,3.0,5.0,8.0)
-                )
+    fun createRoom(context: Context, roomName: String, userName: String, status: (Boolean, String) -> Unit) {
+        if (roomName.isEmpty()) {
+            status.invoke(false, "Error: Room name is empty")
+        } else {
+            isUserReady(context, userName) { isReady ->
+                if (isReady) {
+                    val userID = SharedPreferencesUtils.getString(context, SharedPreferencesUtils.userID)
+                    val room = hashMapOf(
+                        "name" to roomName,
+                        "leader" to userID,
+                        "points" to listOf(0.5,1.0,1.5,2.0,3.0,5.0,8.0)
+                    )
 
-                val db = Firebase.firestore
-                val refCollection = db.collection("Rooms")
+                    val db = Firebase.firestore
+                    val refCollection = db.collection("Rooms")
 
-                refCollection
-                    .add(room)
-                    .addOnSuccessListener {
-                        it
-                    }
-                    .addOnFailureListener { e ->
-                        e
-                    }
-            } else {
-                // TODO alert some user error
-                // TODO room empty
+                    refCollection
+                        .add(room)
+                        .addOnSuccessListener {
+                            status.invoke(true, "Success: $roomName is ready")
+                        }
+                        .addOnFailureListener { e ->
+                            status.invoke(false, "Error: Firebase add room Failure")
+                        }
+                } else {
+                    status.invoke(false, "Error: User not ready")
+                }
             }
         }
     }
 
-    fun joinRoom(context: Context, roomID: String, name: String) {
+    fun joinRoom(context: Context, roomID: String, name: String, status: (Boolean, String) -> Unit) {
         isUserReady(context, name) { isReady ->
             if (isReady) {
                 val userID = SharedPreferencesUtils.getString(context, SharedPreferencesUtils.userID)
@@ -142,16 +144,26 @@ class MainViewModel: ViewModel() {
                 refMembers.document(userID)
                     .set(user)
                     .addOnSuccessListener {
-                        it
+                        status.invoke(true, "Success: join room")
                     }
                     .addOnFailureListener { e ->
-                        e
+                        status.invoke(false, "Error: Firebase join room Failure")
                     }
             } else {
-                // TODO alert some user error
-                // TODO room empty
+                status.invoke(false, "Error: User not ready")
             }
         }
+    }
+
+    fun removeRooms(roomID: String) {
+        val db = Firebase.firestore
+        val collectionRef = db.collection("Rooms") // Reference to the collection
+        val documentRef = collectionRef.document(roomID)
+        documentRef.delete()
+            .addOnSuccessListener {
+            }
+            .addOnFailureListener { e ->
+            }
     }
 
     fun getUserName(context: Context): String {
@@ -251,6 +263,7 @@ class MainViewModel: ViewModel() {
             .addOnFailureListener { e ->
                 e
             }
+        // TODO vote fail
     }
 
     fun clearRoom() {

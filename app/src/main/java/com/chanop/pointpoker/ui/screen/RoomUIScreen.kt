@@ -20,6 +20,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -31,7 +34,6 @@ import com.chanop.pointpoker.MainViewModel
 import com.chanop.pointpoker.ui.theme.PointPokerTheme
 import com.google.firebase.firestore.DocumentSnapshot
 
-// TODO
 @Composable
 fun RoomScreen(
     navController: NavController? = null,
@@ -158,17 +160,27 @@ fun MembersScreen(
     viewModel: MainViewModel,
     averagePoint: Any?
 ) {
+    val context = LocalContext.current
     val currentMembers by viewModel.currentMembers.collectAsState()
+    var username by remember { mutableStateOf(viewModel.getUserName(context)) }
     LazyColumn {
         item {
             Text(text = "Members(${currentMembers.size})")
         }
-        items(currentMembers) {
+        items(currentMembers) { item ->
+            val name = (item.data?.get("name") as? String) ?: ""
             Row(modifier = Modifier.padding(8.dp)) {
-                Text(text = (it.data?.get("name") as? String) ?: "")
+                Text(text = name)
 
                 if (averagePoint != null) {
-                    Text(modifier = Modifier.padding(4.dp), text = it.data?.get("point").toString())
+                    Text(modifier = Modifier.padding(4.dp), text = item.data?.get("point").toString())
+                } else {
+                    if (name == username) {
+                        Text(modifier = Modifier.padding(4.dp), text = item.data?.get("point").toString())
+                    }
+                    else {
+                        Text(modifier = Modifier.padding(4.dp), text = "?")
+                    }
                 }
             }
         }
