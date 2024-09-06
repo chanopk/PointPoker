@@ -1,9 +1,10 @@
-package com.chanop.pointpoker
+package com.chanop.pointpoker.viewmodel
 
 import android.content.ContentValues
 import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import com.chanop.pointpoker.SharedPreferencesUtils
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.DocumentSnapshot
@@ -38,7 +39,8 @@ class MainViewModel: ViewModel() {
                     }
                 }
             } else {
-                val previousName = SharedPreferencesUtils.getString(context, SharedPreferencesUtils.userName)
+                val previousName =
+                    SharedPreferencesUtils.getString(context, SharedPreferencesUtils.userName)
                 if (name != previousName) {
                     changeName(context, userID, name) { status ->
                         if (status) {
@@ -103,7 +105,8 @@ class MainViewModel: ViewModel() {
         } else {
             isUserReady(context, userName) { isReady ->
                 if (isReady) {
-                    val userID = SharedPreferencesUtils.getString(context, SharedPreferencesUtils.userID)
+                    val userID =
+                        SharedPreferencesUtils.getString(context, SharedPreferencesUtils.userID)
                     val room = hashMapOf(
                         "name" to roomName,
                         "leader" to userID,
@@ -131,7 +134,8 @@ class MainViewModel: ViewModel() {
     fun joinRoom(context: Context, roomID: String, name: String, status: (Boolean, String) -> Unit) {
         isUserReady(context, name) { isReady ->
             if (isReady) {
-                val userID = SharedPreferencesUtils.getString(context, SharedPreferencesUtils.userID)
+                val userID =
+                    SharedPreferencesUtils.getString(context, SharedPreferencesUtils.userID)
                 val user = hashMapOf(
                     "name" to name,
                 )
@@ -153,6 +157,24 @@ class MainViewModel: ViewModel() {
                 status.invoke(false, "Error: User not ready")
             }
         }
+    }
+
+    fun leaveRoom(context: Context, roomID: String) {
+        val userID = SharedPreferencesUtils.getString(context, SharedPreferencesUtils.userID)
+
+        val db = Firebase.firestore
+        val refRooms = db.collection("Rooms")
+        val refRoom = refRooms.document(roomID)
+        val refMembers = refRoom.collection("Members")
+
+        refMembers.document(userID)
+            .delete()
+            .addOnSuccessListener {
+                clearRoom()
+            }
+            .addOnFailureListener { e ->
+                clearRoom()
+            }
     }
 
     fun removeRooms(roomID: String) {
@@ -214,6 +236,7 @@ class MainViewModel: ViewModel() {
         val collectionRef = db.collection("Rooms")
         val documentRef = collectionRef.document(roomId)
         val membersCollectionRef = documentRef.collection("Members")
+        _currentMembers.value = arrayListOf<DocumentSnapshot>()
 
         membersCollectionRef.addSnapshotListener{ snapshot, error ->
             val tmpAllCurrentMembers = arrayListOf<DocumentSnapshot>()
@@ -226,13 +249,16 @@ class MainViewModel: ViewModel() {
                         }
                     }
                     DocumentChange.Type.MODIFIED -> {
-                        val index = tmpAllCurrentMembers.indexOfFirst { it.id == documentChange.document.id }
-                        tmpAllCurrentMembers.removeAt(index)
-                        tmpAllCurrentMembers.add(index, documentChange.document)
+                        if (tmpAllCurrentMembers.isNotEmpty()) {
+                            val index = tmpAllCurrentMembers.indexOfFirst { it.id == documentChange.document.id }
+                            tmpAllCurrentMembers[index] = documentChange.document
+                        }
                     }
                     DocumentChange.Type.REMOVED -> {
-                        val index = tmpAllCurrentMembers.indexOfFirst { it.id == documentChange.document.id }
-                        tmpAllCurrentMembers.removeAt(index)
+                        if (tmpAllCurrentMembers.isNotEmpty()) {
+                            val index = tmpAllCurrentMembers.indexOfFirst { it.id == documentChange.document.id }
+                            tmpAllCurrentMembers.removeAt(index)
+                        }
                     }
                     else -> {}
                 }
@@ -272,9 +298,8 @@ class MainViewModel: ViewModel() {
     }
 
     fun calAveragePoint(roomId: String) {
-        //TODO optimize
         val sumPoint = _currentMembers.value.sumOf { it.data?.get("point") as? Double ?: 0.0 }
-        val averagePoint = sumPoint/_currentMembers.value.size
+        val averagePoint = sumPoint / _currentMembers.value.size
 
         val room = hashMapOf(
             "average_point" to averagePoint,
@@ -317,6 +342,6 @@ class MainViewModel: ViewModel() {
                 e
             }
 
-        //TODO reset point of user
+        // TODO reset point of user
     }
 }

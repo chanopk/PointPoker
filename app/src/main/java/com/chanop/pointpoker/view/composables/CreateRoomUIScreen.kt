@@ -1,4 +1,4 @@
-package com.chanop.pointpoker.ui.screen
+package com.chanop.pointpoker.view.composables
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -28,8 +28,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.chanop.pointpoker.MainViewModel
-import com.chanop.pointpoker.ui.theme.PointPokerTheme
+import com.chanop.pointpoker.viewmodel.MainViewModel
+import com.chanop.pointpoker.view.composables.theme.PointPokerTheme
 import kotlinx.coroutines.*
 
 

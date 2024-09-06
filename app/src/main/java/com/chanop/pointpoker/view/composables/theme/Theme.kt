@@ -1,6 +1,5 @@
-package com.chanop.pointpoker.ui.theme
+package com.chanop.pointpoker.view.composables.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme

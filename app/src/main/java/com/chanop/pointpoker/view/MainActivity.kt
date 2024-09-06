@@ -1,4 +1,4 @@
-package com.chanop.pointpoker
+package com.chanop.pointpoker.view
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -9,10 +9,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.chanop.pointpoker.screen.HomeScreen
-import com.chanop.pointpoker.ui.screen.CreateRoomScreen
-import com.chanop.pointpoker.ui.screen.RoomScreen
-import com.chanop.pointpoker.ui.theme.PointPokerTheme
+import com.chanop.pointpoker.viewmodel.MainViewModel
+import com.chanop.pointpoker.view.composables.HomeScreen
+import com.chanop.pointpoker.view.composables.CreateRoomScreen
+import com.chanop.pointpoker.view.composables.RoomScreen
+import com.chanop.pointpoker.view.composables.theme.PointPokerTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -25,6 +26,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
 
 @Composable
 fun NavControllerView() {
