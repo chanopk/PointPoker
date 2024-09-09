@@ -25,6 +25,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,30 +36,29 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import com.chanop.pointpoker.viewmodel.MainViewModel
-import com.google.firebase.firestore.DocumentSnapshot
+import com.chanop.pointpoker.intent.RoomIntent
+import com.chanop.pointpoker.model.Room
+import com.chanop.pointpoker.viewmodel.RoomViewModel
 import kotlinx.coroutines.launch
 
 @Composable
 fun HomeScreen(
-    navController: NavController,
     modifier: Modifier = Modifier,
-    viewModel: MainViewModel
+    roomViewModel: RoomViewModel
 ) {
     val context = LocalContext.current
+
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    // example
-//    val isLoading = remember { mutableStateOf( true ) }
-//    LaunchedEffect(isLoading.value) {
-//        if (isLoading.value) {
-//            isLoading.value = false
-//        }
-//    }
+    val isLoading = remember { mutableStateOf(true) }
+    LaunchedEffect(isLoading.value) {
+        if (isLoading.value) {
+            roomViewModel.processIntent(RoomIntent.LoadRoom(context = context))
+        }
+    }
 
-    var username by remember { mutableStateOf(viewModel.getUserName(context)) }
+    var username by remember { mutableStateOf(roomViewModel.getUserName(context)) }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -110,7 +110,7 @@ fun HomeScreen(
                                         )
                                     }
                                 } else {
-                                    navController.navigate("createroom/${username}")
+                                    roomViewModel.processIntent(RoomIntent.NavigateTo("createroom/${username}"))
                                 }
                             },
                         verticalAlignment = Alignment.CenterVertically
@@ -121,8 +121,7 @@ fun HomeScreen(
                 }
 
                 AllRoomView(
-                    navController = navController,
-                    viewModel = viewModel,
+                    roomViewModel = roomViewModel,
                     username = username,
                     snackbarHostState = snackbarHostState
                 )
@@ -133,12 +132,20 @@ fun HomeScreen(
 
 @Composable
 fun AllRoomView(
-    navController: NavController,
-    viewModel: MainViewModel,
+    roomViewModel: RoomViewModel,
     username: String,
     snackbarHostState: SnackbarHostState
 ) {
-    val allRoom by viewModel.allRoom.collectAsState()
+    val roomModel by roomViewModel.roomModel.collectAsState()
+
+    roomModel.error?.let { errorMessage ->
+        LaunchedEffect(key1 = errorMessage) { // Triggered when errorMessage changes
+            snackbarHostState.showSnackbar(
+                message = errorMessage,
+                duration = SnackbarDuration.Short
+            )
+        }
+    }
 
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 144.dp),
@@ -146,11 +153,10 @@ fun AllRoomView(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        items(allRoom) {
+        items(roomModel.roomList) { room ->
             RoomView(
-                navController = navController,
-                viewModel = viewModel,
-                documentSnapshot = it,
+                roomViewModel = roomViewModel,
+                room = room,
                 username = username,
                 snackbarHostState = snackbarHostState
             )
@@ -160,16 +166,14 @@ fun AllRoomView(
 
 @Composable
 fun RoomView(
-    navController: NavController,
     modifier: Modifier = Modifier,
-    viewModel: MainViewModel,
-    documentSnapshot: DocumentSnapshot,
+    roomViewModel: RoomViewModel,
+    room: Room,
     username: String,
     snackbarHostState: SnackbarHostState
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val roomName = (documentSnapshot.data?.get("name") as? String) ?: ""
 
     Card(
         modifier
@@ -184,18 +188,7 @@ fun RoomView(
                         )
                     }
                 } else {
-                    viewModel.joinRoom(context, documentSnapshot.id, username) { status, message ->
-                        if (status) {
-                            navController.navigate("room/${documentSnapshot.id}")
-                        } else {
-                            scope.launch() {
-                                snackbarHostState.showSnackbar(
-                                    message = "Join Room Error",
-                                    duration = SnackbarDuration.Short
-                                )
-                            }
-                        }
-                    }
+                    roomViewModel.processIntent(RoomIntent.JoinRoom(context, room.id, username))
                 }
             }
             .padding(8.dp)
@@ -205,20 +198,20 @@ fun RoomView(
                 .fillMaxSize()
                 .padding(12.dp)
         ) {
-            if (viewModel.checkUserId(context, documentSnapshot.data?.get("leader") as? String)) {
+            if (room.owner) {
                 Icon(
                     Icons.Default.Close,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .clickable {
-                            viewModel.removeRooms(documentSnapshot.id)
+                            roomViewModel.processIntent(RoomIntent.RemoveRoom(roomID = room.id))
                         },
                     contentDescription = "Remove Button"
                 )
             }
             Text(
                 modifier = Modifier.align(Alignment.BottomCenter),
-                text = roomName
+                text = room.name
             )
         }
     }
