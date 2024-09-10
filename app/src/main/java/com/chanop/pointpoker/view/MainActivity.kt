@@ -4,9 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -23,7 +21,8 @@ import com.chanop.pointpoker.view.composables.CreateRoomScreen
 import com.chanop.pointpoker.view.composables.HomeScreen
 import com.chanop.pointpoker.view.composables.RoomScreen
 import com.chanop.pointpoker.view.composables.theme.PointPokerTheme
-import com.chanop.pointpoker.viewmodel.RoomViewModel
+import com.chanop.pointpoker.viewmodel.CreateRoomViewModel
+import com.chanop.pointpoker.viewmodel.HomeViewModel
 
 class MainActivity : ComponentActivity() {
 
@@ -39,9 +38,12 @@ class MainActivity : ComponentActivity() {
 }
 
 class ViewModelFactory(private val navController: NavController, private val userRepository: UserRepository, private val roomRepository: RoomRepository) : ViewModelProvider.Factory {
+    // TODO optimize DI
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(RoomViewModel::class.java)) {
-            return RoomViewModel(navController, userRepository, roomRepository) as T
+        if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
+            return HomeViewModel(navController, userRepository, roomRepository) as T
+        } else if (modelClass.isAssignableFrom(CreateRoomViewModel::class.java)) {
+            return CreateRoomViewModel(navController, roomRepository) as T
         } else {
             throw IllegalArgumentException("Unknown ViewModel class")
         }
@@ -55,18 +57,20 @@ fun NavControllerView() {
     val mainViewModel = MainViewModel()
 
     val navController = rememberNavController()
-    val roomViewModel: RoomViewModel = viewModel(
+    val homeViewModel: HomeViewModel = viewModel(
+        factory = ViewModelFactory(navController, UserRepositoryImpl(), RoomRepositoryImpl())
+    )
+    val createRoomViewModel: CreateRoomViewModel = viewModel(
         factory = ViewModelFactory(navController, UserRepositoryImpl(), RoomRepositoryImpl())
     )
 
     NavHost(navController = navController, startDestination = "home") {
         composable("home") {
-            HomeScreen(roomViewModel = roomViewModel)
+            HomeScreen(homeViewModel = homeViewModel)
         }
-        //TODO 1 CreateRoomScreen to mvi
         composable("createroom/{username}") { backStackEntry ->
             val name = backStackEntry.arguments?.getString("username") ?: ""
-            CreateRoomScreen(navController = navController, viewModel = mainViewModel, username = name)
+            CreateRoomScreen(createRoomViewModel = createRoomViewModel, username = name)
         }
         //TODO 2  RoomScreen to mvi
         composable("room/{roomid}") { backStackEntry ->

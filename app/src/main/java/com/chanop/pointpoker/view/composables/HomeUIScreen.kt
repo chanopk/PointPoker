@@ -36,15 +36,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.chanop.pointpoker.intent.RoomIntent
+import com.chanop.pointpoker.intent.HomeIntent
 import com.chanop.pointpoker.model.Room
-import com.chanop.pointpoker.viewmodel.RoomViewModel
+import com.chanop.pointpoker.viewmodel.HomeViewModel
 import kotlinx.coroutines.launch
 
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
-    roomViewModel: RoomViewModel
+    homeViewModel: HomeViewModel
 ) {
     val context = LocalContext.current
 
@@ -54,11 +54,11 @@ fun HomeScreen(
     val isLoading = remember { mutableStateOf(true) }
     LaunchedEffect(isLoading.value) {
         if (isLoading.value) {
-            roomViewModel.processIntent(RoomIntent.LoadRoom(context = context))
+            homeViewModel.processIntent(HomeIntent.LoadHome(context = context))
         }
     }
 
-    var username by remember { mutableStateOf(roomViewModel.getUserName(context)) }
+    var username by remember { mutableStateOf(homeViewModel.getUserName(context)) }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -110,7 +110,7 @@ fun HomeScreen(
                                         )
                                     }
                                 } else {
-                                    roomViewModel.processIntent(RoomIntent.NavigateTo("createroom/${username}"))
+                                    homeViewModel.processIntent(HomeIntent.NavigateTo("createroom/${username}"))
                                 }
                             },
                         verticalAlignment = Alignment.CenterVertically
@@ -121,7 +121,7 @@ fun HomeScreen(
                 }
 
                 AllRoomView(
-                    roomViewModel = roomViewModel,
+                    homeViewModel = homeViewModel,
                     username = username,
                     snackbarHostState = snackbarHostState
                 )
@@ -132,11 +132,11 @@ fun HomeScreen(
 
 @Composable
 fun AllRoomView(
-    roomViewModel: RoomViewModel,
+    homeViewModel: HomeViewModel,
     username: String,
     snackbarHostState: SnackbarHostState
 ) {
-    val roomModel by roomViewModel.roomModel.collectAsState()
+    val roomModel by homeViewModel.roomModel.collectAsState()
 
     roomModel.error?.let { errorMessage ->
         LaunchedEffect(key1 = errorMessage) { // Triggered when errorMessage changes
@@ -155,7 +155,7 @@ fun AllRoomView(
     ) {
         items(roomModel.roomList) { room ->
             RoomView(
-                roomViewModel = roomViewModel,
+                homeViewModel = homeViewModel,
                 room = room,
                 username = username,
                 snackbarHostState = snackbarHostState
@@ -167,7 +167,7 @@ fun AllRoomView(
 @Composable
 fun RoomView(
     modifier: Modifier = Modifier,
-    roomViewModel: RoomViewModel,
+    homeViewModel: HomeViewModel,
     room: Room,
     username: String,
     snackbarHostState: SnackbarHostState
@@ -188,7 +188,7 @@ fun RoomView(
                         )
                     }
                 } else {
-                    roomViewModel.processIntent(RoomIntent.JoinRoom(context, room.id, username))
+                    homeViewModel.processIntent(HomeIntent.JoinHome(context, room.id, username))
                 }
             }
             .padding(8.dp)
@@ -204,7 +204,7 @@ fun RoomView(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .clickable {
-                            roomViewModel.processIntent(RoomIntent.RemoveRoom(roomID = room.id))
+                            homeViewModel.processIntent(HomeIntent.RemoveHome(roomID = room.id))
                         },
                     contentDescription = "Remove Button"
                 )

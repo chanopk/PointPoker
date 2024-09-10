@@ -17,33 +17,49 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import com.chanop.pointpoker.viewmodel.MainViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.rememberNavController
+import com.chanop.pointpoker.intent.CreateRoomIntent
+import com.chanop.pointpoker.intent.HomeIntent
+import com.chanop.pointpoker.repository.RoomRepositoryImpl
+import com.chanop.pointpoker.repository.UserRepositoryImpl
+import com.chanop.pointpoker.view.ViewModelFactory
 import com.chanop.pointpoker.view.composables.theme.PointPokerTheme
-import kotlinx.coroutines.*
+import com.chanop.pointpoker.viewmodel.CreateRoomViewModel
+import com.chanop.pointpoker.viewmodel.HomeViewModel
 
 
 @Composable
 fun CreateRoomScreen(
     modifier: Modifier = Modifier,
-    navController: NavController? = null,
-    viewModel: MainViewModel,
+    createRoomViewModel: CreateRoomViewModel,
     username: String
 ) {
     val context = LocalContext.current
     var roomname by remember { mutableStateOf("") }
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
+
+    val createRoomModel by createRoomViewModel.createRoomModel.collectAsState()
+
+    createRoomModel.error?.let { errorMessage ->
+        LaunchedEffect(key1 = errorMessage) { // Triggered when errorMessage changes
+            snackbarHostState.showSnackbar(
+                message = errorMessage,
+                duration = SnackbarDuration.Short
+            )
+        }
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -58,7 +74,7 @@ fun CreateRoomScreen(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .clickable {
-                        navController?.popBackStack()
+                        createRoomViewModel.processIntent(CreateRoomIntent.NavigateBack)
                     }
                     .padding(16.dp),
                 contentDescription = "Close Button"
@@ -78,18 +94,7 @@ fun CreateRoomScreen(
                     .align(Alignment.BottomCenter),
                 shape = RoundedCornerShape(8.dp),
                 onClick = {
-                    viewModel.createRoom(context = context, roomName = roomname, userName = username) { status, message ->
-                        scope.launch(Dispatchers.Main) {
-                            if (status) {
-                                navController?.popBackStack()
-                            } else {
-                                snackbarHostState.showSnackbar(
-                                    message = message,
-                                    duration = SnackbarDuration.Short
-                                )
-                            }
-                        }
-                    }
+                    createRoomViewModel.processIntent(CreateRoomIntent.CreateHome(context = context, roomName = roomname))
                 }) {
                 Text(text = "Create")
             }
@@ -100,8 +105,12 @@ fun CreateRoomScreen(
 @Preview(showBackground = true)
 @Composable
 fun CreateRoomScreenPreview() {
+    val navController = rememberNavController()
+    val createRoomViewModel: CreateRoomViewModel = viewModel(
+        factory = ViewModelFactory(navController, UserRepositoryImpl(), RoomRepositoryImpl())
+    )
     PointPokerTheme {
-        CreateRoomScreen(username = "test", viewModel = MainViewModel())
+        CreateRoomScreen(username = "test", createRoomViewModel = createRoomViewModel)
     }
 }
 

@@ -31,15 +31,18 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
-import com.chanop.pointpoker.viewmodel.MainViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.rememberNavController
+import com.chanop.pointpoker.repository.RoomRepositoryImpl
+import com.chanop.pointpoker.repository.UserRepositoryImpl
+import com.chanop.pointpoker.view.ViewModelFactory
 import com.chanop.pointpoker.view.composables.theme.PointPokerTheme
+import com.chanop.pointpoker.viewmodel.HomeViewModel
 import com.google.firebase.firestore.DocumentSnapshot
 
 @Composable
 fun RoomScreen(
-    navController: NavController? = null,
-    viewModel: MainViewModel,
+    homeViewModel: HomeViewModel,
     roomId: String,
 ) {
     val context = LocalContext.current
@@ -62,8 +65,7 @@ fun RoomScreen(
 
 @Composable
 fun RoomLayout(
-    navController: NavController? = null,
-    viewModel: MainViewModel,
+    homeViewModel: HomeViewModel,
     roomId: String,
 ) {
     val context = LocalContext.current
@@ -127,9 +129,8 @@ fun ButtonActionRoom(text: String, onClick: () -> Unit) {
 
 @Composable
 fun RoomDetailScreen(
-    navController: NavController?,
-    viewModel: MainViewModel,
     modifier: Modifier,
+    homeViewModel: HomeViewModel,
     roomId: String,
     currentRoom: DocumentSnapshot?
 ) {
@@ -167,8 +168,7 @@ fun RoomDetailScreen(
 @Composable
 fun PointsScreen(
     modifier: Modifier = Modifier,
-    navController: NavController?,
-    viewModel: MainViewModel,
+    homeViewModel: HomeViewModel,
     roomId: String,
     points: ArrayList<Any>,
     averagePoint: Any?
@@ -196,8 +196,7 @@ fun PointsScreen(
 @Composable
 fun MembersScreen(
     modifier: Modifier = Modifier,
-    navController: NavController?,
-    viewModel: MainViewModel,
+    homeViewModel: HomeViewModel,
     averagePoint: Any?
 ) {
     val context = LocalContext.current
@@ -238,7 +237,11 @@ fun MembersScreen(
 @Preview(showBackground = true)
 @Composable
 fun RoomScreenPreview() {
+    val navController = rememberNavController()
+    val homeViewModel: HomeViewModel = viewModel(
+        factory = ViewModelFactory(navController, UserRepositoryImpl(), RoomRepositoryImpl())
+    )
     PointPokerTheme {
-        RoomLayout(viewModel = MainViewModel(), roomId = "")
+        RoomLayout(homeViewModel = homeViewModel, roomId = "")
     }
 }

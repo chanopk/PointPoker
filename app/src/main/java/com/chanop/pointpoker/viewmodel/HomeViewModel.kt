@@ -5,7 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.chanop.pointpoker.SharedPreferencesUtils
-import com.chanop.pointpoker.intent.RoomIntent
+import com.chanop.pointpoker.intent.HomeIntent
+import com.chanop.pointpoker.model.CreateRoomModel
 import com.chanop.pointpoker.model.Room
 import com.chanop.pointpoker.model.RoomModel
 import com.chanop.pointpoker.repository.RoomRepository
@@ -16,7 +17,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 
-class RoomViewModel(
+class HomeViewModel(
     private val navController: NavController,
     private val userRepository: UserRepository,
     private val roomRepository: RoomRepository
@@ -29,16 +30,17 @@ class RoomViewModel(
         return SharedPreferencesUtils.getString(context, SharedPreferencesUtils.userName)
     }
 
-    fun processIntent(intent: RoomIntent) {
+    fun processIntent(intent: HomeIntent) {
         when (intent) {
-            is RoomIntent.LoadRoom -> loadAllRoom(intent)
-            is RoomIntent.JoinRoom -> joinRoom(intent = intent)
-            is RoomIntent.NavigateTo -> navController.navigate(intent.path)
-            is RoomIntent.RemoveRoom -> removeRoom(intent)
+            is HomeIntent.LoadHome -> loadAllRoom(intent)
+            is HomeIntent.JoinHome -> joinRoom(intent = intent)
+            is HomeIntent.NavigateTo -> navController.navigate(intent.path)
+            HomeIntent.NavigateBack -> navController.popBackStack()
+            is HomeIntent.RemoveHome -> removeRoom(intent)
         }
     }
 
-    private fun loadAllRoom(intent: RoomIntent.LoadRoom) {
+    private fun loadAllRoom(intent: HomeIntent.LoadHome) {
         viewModelScope.launch {
             _roomModel.value = _roomModel.value.copy(isLoading = true)
             try {
@@ -61,7 +63,7 @@ class RoomViewModel(
         }
     }
 
-    private fun joinRoom(intent: RoomIntent.JoinRoom) {
+    private fun joinRoom(intent: HomeIntent.JoinHome) {
         viewModelScope.launch {
             isUserReady(intent.context, intent.name).collect { isReady ->
                 if (isReady) {
@@ -107,7 +109,7 @@ class RoomViewModel(
         }
     }
 
-    private fun removeRoom(intent: RoomIntent.RemoveRoom) {
+    private fun removeRoom(intent: HomeIntent.RemoveHome) {
         viewModelScope.launch {
             roomRepository.removeRooms(intent.roomID).collect { result ->
                 result.onSuccess {

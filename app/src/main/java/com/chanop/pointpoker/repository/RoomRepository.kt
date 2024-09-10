@@ -1,7 +1,5 @@
 package com.chanop.pointpoker.repository
 
-import android.content.Context
-import com.chanop.pointpoker.intent.RoomIntent
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.firestore
@@ -12,6 +10,8 @@ import kotlinx.coroutines.tasks.await
 
 interface RoomRepository {
     suspend fun getRoomsSnapshotFlow(): Flow<QuerySnapshot>
+
+    suspend fun createRoom(userID: String, roomName: String): Flow<Result<Unit>>
 
     suspend fun joinRoom(roomID: String, name: String, userID: String): Flow<Result<Unit>>
 
@@ -37,6 +37,29 @@ class RoomRepositoryImpl : RoomRepository {
 
         awaitClose {
             listenerRegistration.remove() // Clean up the listener when the flow is closed
+        }
+    }
+
+    override suspend fun createRoom(userID: String, roomName: String): Flow<Result<Unit>> = callbackFlow {
+        val room = hashMapOf(
+            "name" to roomName,
+            "leader" to userID,
+            "points" to listOf(0.5,1.0,1.5,2.0,3.0,5.0,8.0)
+        )
+
+        val db = Firebase.firestore
+        val refCollection = db.collection("Rooms")
+
+        try {
+            refCollection
+                .add(room)
+                .await()
+
+            trySend(Result.success(Unit)).isSuccess
+        } catch (e: Exception) {
+            trySend(Result.failure(e)).isSuccess
+        } finally {
+            close()
         }
     }
 
