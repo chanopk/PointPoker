@@ -136,7 +136,7 @@ fun AllRoomView(
     username: String,
     snackbarHostState: SnackbarHostState
 ) {
-    val roomModel by homeViewModel.roomModel.collectAsState()
+    val roomModel by homeViewModel.roomsModel.collectAsState()
 
     roomModel.error?.let { errorMessage ->
         LaunchedEffect(key1 = errorMessage) { // Triggered when errorMessage changes

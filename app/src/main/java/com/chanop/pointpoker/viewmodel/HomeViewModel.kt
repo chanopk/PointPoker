@@ -6,9 +6,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.chanop.pointpoker.SharedPreferencesUtils
 import com.chanop.pointpoker.intent.HomeIntent
-import com.chanop.pointpoker.model.CreateRoomModel
 import com.chanop.pointpoker.model.Room
-import com.chanop.pointpoker.model.RoomModel
+import com.chanop.pointpoker.model.RoomsModel
 import com.chanop.pointpoker.repository.RoomRepository
 import com.chanop.pointpoker.repository.UserRepository
 import kotlinx.coroutines.flow.Flow
@@ -22,8 +21,8 @@ class HomeViewModel(
     private val userRepository: UserRepository,
     private val roomRepository: RoomRepository
 ) : ViewModel() {
-    private val _roomModel = MutableStateFlow<RoomModel>(RoomModel())
-    val roomModel: StateFlow<RoomModel> = _roomModel
+    private val _roomsModel = MutableStateFlow<RoomsModel>(RoomsModel())
+    val roomsModel: StateFlow<RoomsModel> = _roomsModel
 
     // TODO optimize
     fun getUserName(context: Context): String {
@@ -42,7 +41,7 @@ class HomeViewModel(
 
     private fun loadAllRoom(intent: HomeIntent.LoadHome) {
         viewModelScope.launch {
-            _roomModel.value = _roomModel.value.copy(isLoading = true)
+            _roomsModel.value = _roomsModel.value.copy(isLoading = true)
             try {
                 roomRepository.getRoomsSnapshotFlow().collect { snapshot ->
                     val roomList = snapshot.map { document ->
@@ -51,14 +50,13 @@ class HomeViewModel(
                             name = document.data["name"] as String,
                             leader = document.data["leader"] as String,
                             averagePoint = document.data["average_point"] as Double?,
-//                            points = document.data["points"] as List<Double>,
                             owner = (document.data["leader"] as String) == SharedPreferencesUtils.getString(intent.context, SharedPreferencesUtils.userID)
                         )
                     }
-                    _roomModel.value = RoomModel(roomList = roomList)
+                    _roomsModel.value = RoomsModel(roomList = roomList)
                 }
             } catch (e: Exception) {
-                _roomModel.value = RoomModel(isLoading = false, error = "Failed to load room")
+                _roomsModel.value = RoomsModel(isLoading = false, error = "Failed to load room")
             }
         }
     }
@@ -74,12 +72,12 @@ class HomeViewModel(
                         if (result.isSuccess) {
                             navController.navigate("room/${intent.roomID}")
                         } else {
-                            _roomModel.value = _roomModel.value.copy(error = "Failed to join room : firebase error")
+                            _roomsModel.value = _roomsModel.value.copy(error = "Failed to join room : firebase error")
                         }
                     }
 
                 } else {
-                    _roomModel.value = _roomModel.value.copy(error = "Failed to join room : account error")
+                    _roomsModel.value = _roomsModel.value.copy(error = "Failed to join room : account error")
                 }
             }
         }
@@ -115,7 +113,7 @@ class HomeViewModel(
                 result.onSuccess {
                     // Room removed successfully
                 }.onFailure { exception ->
-                    _roomModel.value = _roomModel.value.copy(isLoading = false, error = "Failed to remove room")
+                    _roomsModel.value = _roomsModel.value.copy(isLoading = false, error = "Failed to remove room")
                 }
             }
         }

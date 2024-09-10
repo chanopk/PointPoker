@@ -1,6 +1,7 @@
 package com.chanop.pointpoker.repository
 
 import com.google.firebase.Firebase
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.channels.awaitClose
@@ -10,6 +11,8 @@ import kotlinx.coroutines.tasks.await
 
 interface RoomRepository {
     suspend fun getRoomsSnapshotFlow(): Flow<QuerySnapshot>
+
+    suspend fun getRoomSnapshotFlow(roomID: String): Flow<DocumentSnapshot>
 
     suspend fun createRoom(userID: String, roomName: String): Flow<Result<Unit>>
 
@@ -25,6 +28,27 @@ class RoomRepositoryImpl : RoomRepository {
         val collectionRef = db.collection("Rooms")
 
         val listenerRegistration = collectionRef.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                close(error) // Close the flow with the error
+                return@addSnapshotListener
+            }
+
+            if (snapshot != null) {
+                trySend(snapshot).isSuccess // Send the snapshot to the flow
+            }
+        }
+
+        awaitClose {
+            listenerRegistration.remove() // Clean up the listener when the flow is closed
+        }
+    }
+
+    override suspend fun getRoomSnapshotFlow(roomID: String): Flow<DocumentSnapshot> = callbackFlow {
+        val db = Firebase.firestore
+        val collectionRef = db.collection("Rooms")
+        val documentRef = collectionRef.document(roomID)
+
+        val listenerRegistration = documentRef.addSnapshotListener { snapshot, error ->
             if (error != null) {
                 close(error) // Close the flow with the error
                 return@addSnapshotListener
@@ -100,4 +124,6 @@ class RoomRepositoryImpl : RoomRepository {
             close() // Close the flow
         }
     }
+
+
 }

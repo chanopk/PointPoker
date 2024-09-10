@@ -33,43 +33,47 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
+import com.chanop.pointpoker.intent.RoomIntent
+import com.chanop.pointpoker.model.RoomModel
+import com.chanop.pointpoker.repository.MemberRepositoryImpl
 import com.chanop.pointpoker.repository.RoomRepositoryImpl
 import com.chanop.pointpoker.repository.UserRepositoryImpl
 import com.chanop.pointpoker.view.ViewModelFactory
 import com.chanop.pointpoker.view.composables.theme.PointPokerTheme
 import com.chanop.pointpoker.viewmodel.HomeViewModel
+import com.chanop.pointpoker.viewmodel.RoomViewModel
 import com.google.firebase.firestore.DocumentSnapshot
 
 @Composable
 fun RoomScreen(
-    homeViewModel: HomeViewModel,
-    roomId: String,
+    roomViewModel: RoomViewModel,
+    roomID: String,
 ) {
     val context = LocalContext.current
     val isLoading = remember { mutableStateOf(true) }
     LaunchedEffect(isLoading.value) {
         if (isLoading.value) {
             isLoading.value = false
-            viewModel.getCurrentRoom(roomId)
-            viewModel.getCurrentMember(roomId)
+            roomViewModel.processIntent(RoomIntent.LoadRoom(context = context, roomID = roomID))
+            roomViewModel.processIntent(RoomIntent.LoadMembers(context = context, roomID = roomID))
         }
     }
 
     BackHandler(enabled = true) {
-        viewModel.leaveRoom(context, roomId)
-        navController?.popBackStack()
+        // TODO
+//        viewModel.leaveRoom(context, roomId)
+//        navController?.popBackStack()
     }
 
-    RoomLayout(navController, viewModel, roomId)
+    RoomLayout(roomViewModel = roomViewModel)
 }
 
 @Composable
 fun RoomLayout(
-    homeViewModel: HomeViewModel,
-    roomId: String,
+    roomViewModel: RoomViewModel
 ) {
     val context = LocalContext.current
-    val currentRoom by viewModel.currentRoom.collectAsState()
+    val currentRoom by roomViewModel.currentRoom.collectAsState()
     Scaffold(
         topBar = {
             Row(
@@ -81,8 +85,9 @@ fun RoomLayout(
                     Icons.Default.Close,
                     modifier = Modifier
                         .clickable {
-                            viewModel.leaveRoom(context, roomId)
-                            navController?.popBackStack()
+//                            TODO
+//                            viewModel.leaveRoom(context, roomId)
+//                            navController?.popBackStack()
                         }
                         .padding(16.dp),
                     contentDescription = "Close Button"
@@ -90,24 +95,24 @@ fun RoomLayout(
             }
         },
         bottomBar = {
-            if (viewModel.checkUserId(context, currentRoom?.data?.get("leader") as? String)) {
-                if (currentRoom?.data?.get("average_point") == null) {
-                    ButtonActionRoom(text = "average_point") {
-                        viewModel.calAveragePoint(roomId)
+            if (currentRoom.room?.owner == true) {
+                if (currentRoom.room?.averagePoint == null) {
+                    ButtonActionRoom(text = "Average Point") {
+//                        TODO
+//                        viewModel.calAveragePoint(roomId)
                     }
                 } else {
                     ButtonActionRoom(text = "Reset") {
-                        viewModel.resetAveragePoint(roomId)
+//                        TODO
+//                        viewModel.resetAveragePoint(roomId)
                     }
                 }
             }
         },
     ) { innerPadding ->
         RoomDetailScreen(
-            navController,
-            viewModel,
-            Modifier.padding(innerPadding),
-            roomId,
+            modifier = Modifier.padding(innerPadding),
+            roomViewModel = roomViewModel,
             currentRoom
         )
     }
@@ -130,9 +135,8 @@ fun ButtonActionRoom(text: String, onClick: () -> Unit) {
 @Composable
 fun RoomDetailScreen(
     modifier: Modifier,
-    homeViewModel: HomeViewModel,
-    roomId: String,
-    currentRoom: DocumentSnapshot?
+    roomViewModel: RoomViewModel,
+    currentRoom: RoomModel
 ) {
 
     Column(
@@ -144,47 +148,43 @@ fun RoomDetailScreen(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = (currentRoom?.data?.get("name") as? String ?: ""), fontSize = 18.sp)
+            Text(text = (currentRoom.room?.name ?: ""), fontSize = 18.sp)
         }
 
         Text(
             modifier = Modifier.padding(16.dp),
-            text = "Average Point: ${currentRoom?.data?.get("average_point") ?: "nothing"}"
+            text = "Average Point: ${currentRoom.room?.averagePoint ?: "nothing"}"
         )
 
         PointsScreen(
-            navController = navController,
             modifier = Modifier.padding(16.dp),
-            viewModel = viewModel,
-            roomId = roomId,
-            points = (currentRoom?.data?.get("points") as? ArrayList<Any>) ?: arrayListOf(),
-            averagePoint = currentRoom?.data?.get("average_point")
+            roomViewModel = roomViewModel,
+            currentRoom = currentRoom
         )
 
-        MembersScreen(modifier = Modifier.padding(16.dp, 0.dp, 16.dp, 16.dp), navController = navController, viewModel = viewModel, averagePoint = currentRoom?.data?.get("average_point"))
+        MembersScreen(modifier = Modifier.padding(16.dp, 0.dp, 16.dp, 16.dp), roomViewModel = roomViewModel, currentRoom = currentRoom)
     }
 }
 
 @Composable
 fun PointsScreen(
     modifier: Modifier = Modifier,
-    homeViewModel: HomeViewModel,
-    roomId: String,
-    points: ArrayList<Any>,
-    averagePoint: Any?
+    roomViewModel: RoomViewModel,
+    currentRoom: RoomModel
 ) {
     val context = LocalContext.current
     Column(modifier = modifier) {
         Text(text = "Points")
 
         LazyRow {
-            items(points) {
+            items(currentRoom.room?.points ?: listOf()) {
                 Button(
                     modifier = modifier.padding(4.dp),
                     onClick = {
-                        viewModel.voteAtRoom(context, roomId, it.toString().toDouble())
+//                        TODO
+//                        viewModel.voteAtRoom(context, roomId, it.toString().toDouble())
                     },
-                    enabled = averagePoint == null
+                    enabled = currentRoom.room?.averagePoint == null
                 ) {
                     Text(modifier = Modifier.padding(4.dp), text = it.toString())
                 }
@@ -196,34 +196,33 @@ fun PointsScreen(
 @Composable
 fun MembersScreen(
     modifier: Modifier = Modifier,
-    homeViewModel: HomeViewModel,
-    averagePoint: Any?
+    roomViewModel: RoomViewModel,
+    currentRoom: RoomModel
 ) {
-    val context = LocalContext.current
-    val currentMembers by viewModel.currentMembers.collectAsState()
-    var username by remember { mutableStateOf(viewModel.getUserName(context)) }
+    val currentMembers by roomViewModel.currentMembers.collectAsState()
+
     LazyColumn (modifier = modifier) {
         item {
-            Text(text = "Members(${currentMembers.size})")
+            Text(text = "Members(${currentMembers.memberList.size})")
         }
-        items(currentMembers) { item ->
-            val name = (item.data?.get("name") as? String) ?: ""
+        items(currentMembers.memberList) { item ->
+            val name = item.name
             Row(modifier = Modifier.padding(8.dp)) {
                 Text(text = name)
 
-                if (averagePoint != null) {
+                if (currentRoom.room?.averagePoint != null) {
                     Text(
                         modifier = Modifier.padding(4.dp),
-                        text = item.data?.get("point").toString()
+                        text = (item.point ?: "").toString()
                     )
                 } else {
-                    if (name == username) {
+                    if (item.itsMe) {
                         Text(
                             modifier = Modifier.padding(4.dp),
-                            text = item.data?.get("point").toString()
+                            text = (item.point ?: "").toString()
                         )
                     } else {
-                        if (item.data?.get("point") != null) {
+                        if (item.point != null) {
                             Text(modifier = Modifier.padding(4.dp), text = "?")
                         }
                     }
@@ -238,10 +237,10 @@ fun MembersScreen(
 @Composable
 fun RoomScreenPreview() {
     val navController = rememberNavController()
-    val homeViewModel: HomeViewModel = viewModel(
-        factory = ViewModelFactory(navController, UserRepositoryImpl(), RoomRepositoryImpl())
+    val roomViewModel: RoomViewModel = viewModel(
+        factory = ViewModelFactory(navController, UserRepositoryImpl(), RoomRepositoryImpl(), MemberRepositoryImpl())
     )
     PointPokerTheme {
-        RoomLayout(homeViewModel = homeViewModel, roomId = "")
+        RoomLayout(roomViewModel)
     }
 }

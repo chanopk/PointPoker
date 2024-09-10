@@ -32,6 +32,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.chanop.pointpoker.intent.CreateRoomIntent
 import com.chanop.pointpoker.intent.HomeIntent
+import com.chanop.pointpoker.repository.MemberRepositoryImpl
 import com.chanop.pointpoker.repository.RoomRepositoryImpl
 import com.chanop.pointpoker.repository.UserRepositoryImpl
 import com.chanop.pointpoker.view.ViewModelFactory
@@ -107,7 +108,7 @@ fun CreateRoomScreen(
 fun CreateRoomScreenPreview() {
     val navController = rememberNavController()
     val createRoomViewModel: CreateRoomViewModel = viewModel(
-        factory = ViewModelFactory(navController, UserRepositoryImpl(), RoomRepositoryImpl())
+        factory = ViewModelFactory(navController, UserRepositoryImpl(), RoomRepositoryImpl(), MemberRepositoryImpl())
     )
     PointPokerTheme {
         CreateRoomScreen(username = "test", createRoomViewModel = createRoomViewModel)

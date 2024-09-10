@@ -1,7 +1,13 @@
 package com.chanop.pointpoker.model
 
-data class RoomModel(
+data class RoomsModel(
     val roomList: List<Room> = emptyList(),
+    val isLoading: Boolean = false,
+    val error: String? = null
+)
+
+data class RoomModel(
+    val room: Room? = null,
     val isLoading: Boolean = false,
     val error: String? = null
 )
