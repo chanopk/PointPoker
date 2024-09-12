@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -37,6 +38,7 @@ import com.chanop.pointpoker.repository.RoomRepositoryImpl
 import com.chanop.pointpoker.repository.UserRepositoryImpl
 import com.chanop.pointpoker.view.ViewModelFactory
 import com.chanop.pointpoker.view.composables.theme.PointPokerTheme
+import com.chanop.pointpoker.view.composables.theme.RedDark
 import com.chanop.pointpoker.viewmodel.CreateRoomViewModel
 import com.chanop.pointpoker.viewmodel.HomeViewModel
 
@@ -94,6 +96,7 @@ fun CreateRoomScreen(
                     .padding(24.dp, 0.dp, 24.dp, 36.dp)
                     .align(Alignment.BottomCenter),
                 shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = RedDark),
                 onClick = {
                     createRoomViewModel.processIntent(CreateRoomIntent.CreateHome(context = context, roomName = roomname))
                 }) {

@@ -19,5 +19,6 @@ data class Room(
     val averagePoint: Double? = null,
     val points: List<Double> = listOf(),
     val memberCount: Int? = null,
-    val owner: Boolean = false
+    val owner: Boolean = false,
+    val recent: Boolean = false,
 )

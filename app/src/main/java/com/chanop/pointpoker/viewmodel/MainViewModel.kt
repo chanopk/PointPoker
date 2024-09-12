@@ -289,7 +289,6 @@ class MainViewModel: ViewModel() {
             .addOnFailureListener { e ->
                 e
             }
-        // TODO vote fail
     }
 
     fun clearRoom() {
@@ -341,7 +340,5 @@ class MainViewModel: ViewModel() {
             .addOnFailureListener { e ->
                 e
             }
-
-        // TODO reset point of user
     }
 }

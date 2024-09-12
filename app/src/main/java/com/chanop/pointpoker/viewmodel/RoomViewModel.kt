@@ -19,6 +19,7 @@ import com.google.firebase.firestore.DocumentSnapshot
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 class RoomViewModel(
@@ -37,6 +38,10 @@ class RoomViewModel(
         when (intent) {
             is RoomIntent.LoadRoom -> getCurrentRoom(intent)
             is RoomIntent.LoadMembers -> getCurrentMembers(intent)
+            is RoomIntent.LeaveRoom -> leaveRoom(intent)
+            is RoomIntent.Vote -> voteAtRoom(intent)
+            is RoomIntent.AveragePoint -> averagePoint(intent)
+            is RoomIntent.ResetAveragePoint -> resetAveragePoint(intent)
             is RoomIntent.NavigateTo -> navController.navigate(intent.path)
             RoomIntent.NavigateBack -> navController.popBackStack()
         }
@@ -45,16 +50,17 @@ class RoomViewModel(
     private fun getCurrentRoom(intent: RoomIntent.LoadRoom) {
         viewModelScope.launch {
             roomRepository.getRoomSnapshotFlow(intent.roomID).collect { snapshot ->
-
-                _currentRoom.value = RoomModel( room = Room(
-                        id = snapshot.id,
-                        name = snapshot.data?.get("name") as String,
-                        leader = snapshot.data?.get("leader") as String,
-                        averagePoint = snapshot.data?.get("average_point") as Double?,
-                        points = snapshot.data?.get("points") as List<Double>,
-                        owner = (snapshot.data?.get("leader") as String) == SharedPreferencesUtils.getString(intent.context, SharedPreferencesUtils.userID)
+                snapshot.data?.let {
+                    _currentRoom.value = RoomModel( room = Room(
+                            id = snapshot.id,
+                            name = snapshot.data?.get("name") as String,
+                            leader = snapshot.data?.get("leader") as String,
+                            averagePoint = snapshot.data?.get("average_point") as Double?,
+                            points = snapshot.data?.get("points") as List<Double>,
+                            owner = (snapshot.data?.get("leader") as String) == SharedPreferencesUtils.getString(intent.context, SharedPreferencesUtils.userID)
+                        )
                     )
-                )
+                }
             }
         }
     }
@@ -71,6 +77,70 @@ class RoomViewModel(
                     )
                 }
                 _currentMembers.value = MembersModel(memberList = memberList)
+            }
+        }
+    }
+
+    private fun leaveRoom(intent: RoomIntent.LeaveRoom) {
+        val userID = SharedPreferencesUtils.getString(intent.context, SharedPreferencesUtils.userID)
+
+        viewModelScope.launch {
+            memberRepository.leaveRoom(userID, intent.roomID).collect{ result ->
+                result.onSuccess {
+                    clearRoom()
+                    navController.popBackStack()
+                }.onFailure { exception ->
+                    //TODO log
+                }
+            }
+        }
+    }
+
+    private fun clearRoom() {
+        _currentRoom.value = RoomModel()
+        _currentMembers.value = MembersModel()
+    }
+
+    private fun voteAtRoom(intent: RoomIntent.Vote) {
+        val userID = SharedPreferencesUtils.getString(intent.context, SharedPreferencesUtils.userID)
+        val username = SharedPreferencesUtils.getString(intent.context, SharedPreferencesUtils.userName)
+
+        viewModelScope.launch {
+            memberRepository.voteAtRoom(roomID = intent.roomID, userID = userID, username = username, point = intent.point).collect{ result ->
+                result.onSuccess {
+
+                }.onFailure { exception ->
+                    //TODO log
+                }
+            }
+        }
+    }
+
+    private fun averagePoint(intent: RoomIntent.AveragePoint) {
+        val sumPoint = _currentMembers.value.memberList.sumOf { it.point ?: 0.0}
+        val averagePoint = sumPoint / _currentMembers.value.memberList.size
+
+        viewModelScope.launch {
+            roomRepository.averagePoint(roomModel = intent.currentRoom, averagePoint = averagePoint).collect { result ->
+                result.onSuccess {
+
+                }.
+                onFailure { exception ->
+                    //TODO log
+                }
+            }
+        }
+    }
+
+    private fun resetAveragePoint(intent: RoomIntent.ResetAveragePoint) {
+        viewModelScope.launch {
+            roomRepository.averagePoint(roomModel = intent.currentRoom, averagePoint = null).collect { result ->
+                result.onSuccess {
+//                    TODO 1 reset set point member to 0
+                }.
+                onFailure { exception ->
+                    //TODO log
+                }
             }
         }
     }

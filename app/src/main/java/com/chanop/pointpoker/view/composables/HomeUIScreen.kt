@@ -7,16 +7,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -38,6 +37,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.chanop.pointpoker.intent.HomeIntent
 import com.chanop.pointpoker.model.Room
+import com.chanop.pointpoker.model.RoomModel
+import com.chanop.pointpoker.model.RoomsModel
 import com.chanop.pointpoker.viewmodel.HomeViewModel
 import kotlinx.coroutines.launch
 
@@ -137,6 +138,11 @@ fun AllRoomView(
     snackbarHostState: SnackbarHostState
 ) {
     val roomModel by homeViewModel.roomsModel.collectAsState()
+    var searchState by remember { mutableStateOf(false) }
+
+    val searchText by homeViewModel.searchText.collectAsState()
+    val searchRoom by homeViewModel.searchRoom.collectAsState()
+    val isSearching by homeViewModel.isSearching.collectAsState()
 
     roomModel.error?.let { errorMessage ->
         LaunchedEffect(key1 = errorMessage) { // Triggered when errorMessage changes
@@ -147,21 +153,107 @@ fun AllRoomView(
         }
     }
 
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 144.dp),
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        items(roomModel.roomList) { room ->
-            RoomView(
-                homeViewModel = homeViewModel,
-                room = room,
-                username = username,
-                snackbarHostState = snackbarHostState
-            )
+        item {
+            roomModel.roomList.find { it.recent }?.let {
+                Text(modifier = Modifier.padding(4.dp), text = "Recent Room")
+                RoomView(
+                    homeViewModel = homeViewModel,
+                    room = it,
+                    username = username,
+                    recentView = true,
+                    snackbarHostState = snackbarHostState
+                )
+            }
+        }
+
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(0.dp, 20.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (searchState) {
+                    Column(
+                        modifier = Modifier
+                            .weight(9f)
+                            .padding(4.dp, 0.dp)
+                    ) {
+                        Text(
+                            modifier = Modifier, text = "Search Room"
+                        )
+                        TextField(
+                            modifier = Modifier.fillMaxWidth(),
+                            value = searchText,
+                            onValueChange = homeViewModel::onSearchTextChange,
+                        )
+                    }
+                    Icon(
+                        Icons.Default.Close,
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable {
+                                searchState = !searchState
+                            },
+                        contentDescription = "Search Room"
+                    )
+                } else {
+                    Text(
+                        modifier = Modifier
+                            .weight(9f)
+                            .padding(4.dp, 0.dp), text = "All Room"
+                    )
+                    Icon(
+                        Icons.Default.Search,
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable {
+                                searchState = !searchState
+                            },
+                        contentDescription = "Search Room"
+                    )
+                }
+            }
+        }
+        if (!isSearching) {
+            items(
+                if (searchState) {
+                    searchRoom.roomList
+                } else {
+                    roomModel.roomList
+                }
+            ) { room ->
+                RoomView(
+                    homeViewModel = homeViewModel,
+                    room = room,
+                    username = username,
+                    snackbarHostState = snackbarHostState
+                )
+            }
         }
     }
+
+//    LazyVerticalGrid(
+//        columns = GridCells.Adaptive(minSize = 144.dp),
+//        modifier = Modifier
+//            .fillMaxSize()
+//            .padding(16.dp)
+//    ) {
+//        items(roomModel.roomList) { room ->
+//            RoomView(
+//                homeViewModel = homeViewModel,
+//                room = room,
+//                username = username,
+//                snackbarHostState = snackbarHostState
+//            )
+//        }
+//    }
 }
 
 @Composable
@@ -170,6 +262,7 @@ fun RoomView(
     homeViewModel: HomeViewModel,
     room: Room,
     username: String,
+    recentView: Boolean = false,
     snackbarHostState: SnackbarHostState
 ) {
     val context = LocalContext.current
@@ -177,8 +270,7 @@ fun RoomView(
 
     Card(
         modifier
-            .width(128.dp)
-            .height(200.dp)
+            .fillMaxWidth()
             .clickable {
                 if (username.isEmpty()) {
                     scope.launch() {
@@ -191,28 +283,24 @@ fun RoomView(
                     homeViewModel.processIntent(HomeIntent.JoinHome(context, room.id, username))
                 }
             }
-            .padding(8.dp)
+            .padding(4.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp)
-        ) {
-            if (room.owner) {
+        Row(modifier = Modifier.padding(16.dp, 16.dp)) {
+            Text(
+                modifier = Modifier.weight(9f),
+                text = room.name
+            )
+            if (room.owner && !recentView) {
                 Icon(
                     Icons.Default.Close,
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
+                        .weight(1f)
                         .clickable {
                             homeViewModel.processIntent(HomeIntent.RemoveHome(roomID = room.id))
                         },
                     contentDescription = "Remove Button"
                 )
             }
-            Text(
-                modifier = Modifier.align(Alignment.BottomCenter),
-                text = room.name
-            )
         }
     }
 }

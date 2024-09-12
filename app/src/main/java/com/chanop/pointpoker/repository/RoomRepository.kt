@@ -1,5 +1,6 @@
 package com.chanop.pointpoker.repository
 
+import com.chanop.pointpoker.model.RoomModel
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.QuerySnapshot
@@ -19,6 +20,8 @@ interface RoomRepository {
     suspend fun joinRoom(roomID: String, name: String, userID: String): Flow<Result<Unit>>
 
     suspend fun removeRooms(roomID: String): Flow<Result<Unit>>
+
+    suspend fun averagePoint(roomModel: RoomModel, averagePoint: Double?): Flow<Result<Unit>>
 }
 
 class RoomRepositoryImpl : RoomRepository {
@@ -126,4 +129,33 @@ class RoomRepositoryImpl : RoomRepository {
     }
 
 
+    override suspend fun averagePoint(roomModel: RoomModel, averagePoint: Double?): Flow<Result<Unit>> = callbackFlow {
+
+        val roomData = hashMapOf(
+            "leader" to roomModel.room?.leader,
+            "name" to roomModel.room?.name,
+            "points" to roomModel.room?.points,
+            "owner" to roomModel.room?.owner
+        )
+
+        if (averagePoint != null) {
+            roomData.put("average_point", averagePoint)
+        }
+
+        val db = Firebase.firestore
+        val refCollection = db.collection("Rooms")
+        val refDocument = refCollection.document(roomModel.room?.id ?: "")
+
+        try {
+            refDocument
+                .set(roomData)
+                .await()
+
+            trySend(Result.success(Unit)).isSuccess // Signal success
+        } catch (e: Exception) {
+            trySend(Result.failure(e)).isSuccess // Signal failure with the exception
+        } finally {
+            close() // Close the flow
+        }
+    }
 }

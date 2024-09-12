@@ -4,7 +4,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -34,7 +38,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             PointPokerTheme {
-                NavControllerView()
+                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+                    NavControllerView()
+                }
             }
         }
     }
@@ -53,7 +59,11 @@ class ViewModelFactory(
         } else if (modelClass.isAssignableFrom(CreateRoomViewModel::class.java)) {
             return CreateRoomViewModel(navController, roomRepository) as T
         } else if (modelClass.isAssignableFrom(RoomViewModel::class.java)) {
-            return RoomViewModel(navController = navController, roomRepository = roomRepository, memberRepository = memberRepository) as T
+            return RoomViewModel(
+                navController = navController,
+                roomRepository = roomRepository,
+                memberRepository = memberRepository
+            ) as T
         } else {
             throw IllegalArgumentException("Unknown ViewModel class")
         }
@@ -64,20 +74,33 @@ class ViewModelFactory(
 @Composable
 fun NavControllerView() {
     // TODO optimize lifccycle
-    val mainViewModel = MainViewModel()
-
     val navController = rememberNavController()
     val homeViewModel: HomeViewModel = viewModel(
-        factory = ViewModelFactory(navController, UserRepositoryImpl(), RoomRepositoryImpl(), MemberRepositoryImpl())
+        factory = ViewModelFactory(
+            navController,
+            UserRepositoryImpl(),
+            RoomRepositoryImpl(),
+            MemberRepositoryImpl()
+        )
     )
     val createRoomViewModel: CreateRoomViewModel = viewModel(
-        factory = ViewModelFactory(navController, UserRepositoryImpl(), RoomRepositoryImpl(), MemberRepositoryImpl())
+        factory = ViewModelFactory(
+            navController,
+            UserRepositoryImpl(),
+            RoomRepositoryImpl(),
+            MemberRepositoryImpl()
+        )
     )
     val roomViewModel: RoomViewModel = viewModel(
-        factory = ViewModelFactory(navController, UserRepositoryImpl(), RoomRepositoryImpl(), MemberRepositoryImpl())
+        factory = ViewModelFactory(
+            navController,
+            UserRepositoryImpl(),
+            RoomRepositoryImpl(),
+            MemberRepositoryImpl()
+        )
     )
 
-            NavHost(navController = navController, startDestination = "home") {
+    NavHost(navController = navController, startDestination = "home") {
         composable("home") {
             HomeScreen(homeViewModel = homeViewModel)
         }
@@ -87,7 +110,7 @@ fun NavControllerView() {
         }
         composable("room/{roomid}") { backStackEntry ->
             val roomId = backStackEntry.arguments?.getString("roomid") ?: ""
-            RoomScreen(roomViewModel = roomViewModel, roomId = roomId)
+            RoomScreen(roomViewModel = roomViewModel, roomID = roomId)
         }
 
     }

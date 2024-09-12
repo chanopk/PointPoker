@@ -6,6 +6,7 @@ object SharedPreferencesUtils {
     private const val PREFERENCES_NAME = "app_point_poker" // Choose a suitable name
     const val userID = "user_id"
     const val userName = "user_name"
+    const val recentRoomID = "recent_room_id"
 
     // Function to get SharedPreferences instance
     private fun getSharedPreferences(context: Context): SharedPreferences {
