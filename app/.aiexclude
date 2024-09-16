@@ -1,1 +1,4 @@
 google-services.json
+
+#Exclude everything
+#*

@@ -16,10 +16,12 @@ import com.chanop.pointpoker.repository.RoomRepository
 import com.chanop.pointpoker.repository.UserRepository
 import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.DocumentSnapshot
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 
 class RoomViewModel(
@@ -34,7 +36,6 @@ class RoomViewModel(
 
     private val _currentMembers = MutableStateFlow<MembersModel>(MembersModel())
     val currentMembers: StateFlow<MembersModel> = _currentMembers.asStateFlow()
-
 
     fun processIntent(intent: RoomIntent) {
         when (intent) {
@@ -138,9 +139,15 @@ class RoomViewModel(
         viewModelScope.launch {
             roomRepository.averagePoint(roomModel = intent.currentRoom, averagePoint = null).collect { result ->
                 result.onSuccess {
+                    val resetPointTask: ArrayList<Flow<Result<Unit>>> = arrayListOf()
+                    currentMembers.value.memberList.forEach { member ->
+                        resetPointTask.add(memberRepository.resetPoint(roomID = intent.currentRoom.room?.id ?: "", userID = member.id, username = member.name))
+                    }
+
+                    merge(*resetPointTask.toTypedArray()).collect {}
                 }.
                 onFailure { exception ->
-                    //TODO log
+                    // TODO log
                 }
             }
         }

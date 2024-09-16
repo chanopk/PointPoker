@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -108,6 +109,7 @@ fun HomeScreen(
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent
                         ),
+                        placeholder = { Text("Enter your name", color = Color.Gray) },
                         value = username,
                         onValueChange = { username = it }
                     )
@@ -317,12 +319,12 @@ fun RoomView(
                 }
             }
             .padding(4.dp),
-        shape = RoundedCornerShape(4.dp)
+        shape = RoundedCornerShape(4.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
         Row(
             modifier = Modifier
                 .border(1.dp, Color.Gray)
-                .background(Color.White)
                 .padding(16.dp, 16.dp)
         ) {
             Text(

@@ -12,6 +12,7 @@ interface MemberRepository {
     suspend fun getMembersSnapshotFlow(roomID: String): Flow<QuerySnapshot>
     suspend fun leaveRoom(userID: String, roomID: String): Flow<Result<Unit>>
     suspend fun voteAtRoom(roomID: String, userID: String, username: String, point: Double): Flow<Result<Unit>>
+    suspend fun resetPoint(roomID: String, userID: String, username: String): Flow<Result<Unit>>
 }
 
 class MemberRepositoryImpl : MemberRepository {
@@ -65,6 +66,34 @@ class MemberRepositoryImpl : MemberRepository {
         val vote = hashMapOf(
             "name" to username,
             "point" to point
+        )
+
+        val db = Firebase.firestore
+        val refRooms = db.collection("Rooms")
+        val refRoom = refRooms.document(roomID)
+        val refMembers = refRoom.collection("Members")
+
+        try {
+            refMembers.document(userID)
+                .set(vote)
+                .await()
+
+
+            trySend(Result.success(Unit)).isSuccess
+        } catch (e: Exception) {
+            trySend(Result.failure(e)).isSuccess
+        } finally {
+            close()
+        }
+    }
+
+    override suspend fun resetPoint(
+        roomID: String,
+        userID: String,
+        username: String
+    ): Flow<Result<Unit>> = callbackFlow {
+        val vote = hashMapOf(
+            "name" to username,
         )
 
         val db = Firebase.firestore
