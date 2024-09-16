@@ -1,6 +1,7 @@
 package com.chanop.pointpoker.repository
 
 import com.chanop.pointpoker.model.RoomModel
+import com.chanop.pointpoker.model.RoomsModel
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.QuerySnapshot
@@ -25,6 +26,10 @@ interface RoomRepository {
 }
 
 class RoomRepositoryImpl : RoomRepository {
+
+    companion object {
+//        TODO Repository to instance
+    }
 
     override suspend fun getRoomsSnapshotFlow(): Flow<QuerySnapshot> = callbackFlow {
         val db = Firebase.firestore

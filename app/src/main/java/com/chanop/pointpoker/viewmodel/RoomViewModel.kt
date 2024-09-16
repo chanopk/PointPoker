@@ -27,6 +27,8 @@ class RoomViewModel(
     private val roomRepository: RoomRepository,
     private val memberRepository: MemberRepository,
 ) : ViewModel() {
+
+    //TODO group store
     private val _currentRoom = MutableStateFlow<RoomModel>(RoomModel())
     val currentRoom: StateFlow<RoomModel> = _currentRoom.asStateFlow()
 
@@ -136,7 +138,6 @@ class RoomViewModel(
         viewModelScope.launch {
             roomRepository.averagePoint(roomModel = intent.currentRoom, averagePoint = null).collect { result ->
                 result.onSuccess {
-//                    TODO 1 reset set point member to 0
                 }.
                 onFailure { exception ->
                     //TODO log

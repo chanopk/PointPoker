@@ -1,5 +1,7 @@
 package com.chanop.pointpoker.view.composables
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,12 +12,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -23,6 +27,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -33,15 +38,26 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.rememberNavController
 import com.chanop.pointpoker.intent.HomeIntent
 import com.chanop.pointpoker.model.Room
 import com.chanop.pointpoker.model.RoomModel
 import com.chanop.pointpoker.model.RoomsModel
+import com.chanop.pointpoker.repository.MemberRepositoryImpl
+import com.chanop.pointpoker.repository.RoomRepositoryImpl
+import com.chanop.pointpoker.repository.UserRepositoryImpl
+import com.chanop.pointpoker.view.ViewModelFactory
+import com.chanop.pointpoker.view.composables.theme.PointPokerTheme
 import com.chanop.pointpoker.viewmodel.HomeViewModel
+import com.chanop.pointpoker.viewmodel.RoomViewModel
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
@@ -83,9 +99,18 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TextField(modifier = Modifier.fillMaxWidth(),
+                    TextField(
+                        modifier = Modifier.fillMaxWidth()
+                            .border(1.dp, Color.Gray, RoundedCornerShape(4.dp))
+                            .background(Color.Transparent),
+                        colors = TextFieldDefaults.textFieldColors(
+                            containerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        ),
                         value = username,
-                        onValueChange = { username = it })
+                        onValueChange = { username = it }
+                    )
 
                 }
 
@@ -131,6 +156,7 @@ fun HomeScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AllRoomView(
     homeViewModel: HomeViewModel,
@@ -189,7 +215,14 @@ fun AllRoomView(
                             modifier = Modifier, text = "Search Room"
                         )
                         TextField(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth()
+                                .border(1.dp, Color.Gray, RoundedCornerShape(4.dp))
+                                .background(Color.Transparent),
+                            colors = TextFieldDefaults.textFieldColors(
+                                containerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent
+                            ),
                             value = searchText,
                             onValueChange = homeViewModel::onSearchTextChange,
                         )
@@ -269,7 +302,7 @@ fun RoomView(
     val scope = rememberCoroutineScope()
 
     Card(
-        modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable {
                 if (username.isEmpty()) {
@@ -283,9 +316,15 @@ fun RoomView(
                     homeViewModel.processIntent(HomeIntent.JoinHome(context, room.id, username))
                 }
             }
-            .padding(4.dp)
+            .padding(4.dp),
+        shape = RoundedCornerShape(4.dp)
     ) {
-        Row(modifier = Modifier.padding(16.dp, 16.dp)) {
+        Row(
+            modifier = Modifier
+                .border(1.dp, Color.Gray)
+                .background(Color.White)
+                .padding(16.dp, 16.dp)
+        ) {
             Text(
                 modifier = Modifier.weight(9f),
                 text = room.name
@@ -302,5 +341,22 @@ fun RoomView(
                 )
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun HoneScreenPreview() {
+    val navController = rememberNavController()
+    val homeViewModel: HomeViewModel = viewModel(
+        factory = ViewModelFactory(
+            navController,
+            UserRepositoryImpl(),
+            RoomRepositoryImpl(),
+            MemberRepositoryImpl()
+        )
+    )
+    PointPokerTheme {
+        HomeScreen(modifier = Modifier, homeViewModel)
     }
 }

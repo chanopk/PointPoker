@@ -34,7 +34,6 @@ class HomeViewModel(
     private val _roomsModel = MutableStateFlow<RoomsModel>(RoomsModel())
     val roomsModel: StateFlow<RoomsModel> = _roomsModel
 
-    //TODO optimize other
     private val _searchText = MutableStateFlow("")
     val searchText = _searchText.asStateFlow()
 
