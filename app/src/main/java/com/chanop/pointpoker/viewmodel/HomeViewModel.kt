@@ -65,11 +65,6 @@ class HomeViewModel(
             _roomsModel.value
         )
 
-    // TODO optimize Check MVI concept
-    fun getUserName(context: Context): String {
-        return SharedPreferencesUtils.getString(context, SharedPreferencesUtils.userName)
-    }
-
     fun processIntent(intent: HomeIntent) {
         when (intent) {
             is HomeIntent.LoadHome -> loadAllRoom(intent)
@@ -90,7 +85,7 @@ class HomeViewModel(
                             id = document.id,
                             name = document.data["name"] as String,
                             leader = document.data["leader"] as String,
-                            averagePoint = document.data["average_point"] as Double?,
+//                            averagePoint = document.data["average_point"] as Double?,
                             owner = (document.data["leader"] as String) == SharedPreferencesUtils.getString(intent.context, SharedPreferencesUtils.userID),
                             recent = document.id == SharedPreferencesUtils.getString(intent.context, SharedPreferencesUtils.recentRoomID)
                         )

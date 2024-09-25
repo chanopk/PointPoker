@@ -2,6 +2,7 @@ package com.chanop.pointpoker.view.composables
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,6 +25,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,10 +36,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -52,6 +59,7 @@ import com.chanop.pointpoker.view.composables.theme.Grey
 import com.chanop.pointpoker.view.composables.theme.Pink40
 import com.chanop.pointpoker.view.composables.theme.PointPokerTheme
 import com.chanop.pointpoker.view.composables.theme.RedDark
+import com.chanop.pointpoker.view.composables.theme.White
 import com.chanop.pointpoker.viewmodel.HomeViewModel
 import com.chanop.pointpoker.viewmodel.RoomViewModel
 import com.google.firebase.firestore.DocumentSnapshot
@@ -84,7 +92,22 @@ fun RoomLayout(
 ) {
     val context = LocalContext.current
     val currentRoom by roomViewModel.currentRoom.collectAsState()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    currentRoom.error?.let { errorMessage ->
+        LaunchedEffect(key1 = errorMessage) { // Triggered when errorMessage changes
+            snackbarHostState.showSnackbar(
+                message = errorMessage,
+                duration = SnackbarDuration.Short
+            )
+        }
+    }
+
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             Row(
                 modifier = Modifier
@@ -136,7 +159,7 @@ fun ButtonActionRoom(text: String, onClick: () -> Unit) {
             .fillMaxWidth()
             .padding(24.dp, 0.dp, 24.dp, 36.dp),
         shape = RoundedCornerShape(8.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = RedDark),
+        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
         onClick = {
             onClick.invoke()
         }) {
@@ -165,16 +188,25 @@ fun RoomDetailScreen(
 
         Text(
             modifier = Modifier.padding(16.dp),
-            text = "Average Point: ${currentRoom.room?.averagePoint ?: "nothing"}"
+            text = "Average Point: ${currentRoom.room?.averagePoint ?: "nothing"}",
+            style = MaterialTheme.typography.titleLarge
         )
 
-        PointsScreen(
-            modifier = Modifier.padding(16.dp),
-            roomViewModel = roomViewModel,
-            currentRoom = currentRoom
-        )
+        Row(modifier = Modifier.fillMaxWidth()) {
+            PointsScreen(
+                modifier = Modifier.padding(16.dp),
+                roomViewModel = roomViewModel,
+                currentRoom = currentRoom
+            )
 
-        MembersScreen(modifier = Modifier.padding(16.dp, 0.dp, 16.dp, 16.dp), roomViewModel = roomViewModel, currentRoom = currentRoom)
+            MembersScreen(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+                roomViewModel = roomViewModel,
+                currentRoom = currentRoom
+            )
+        }
     }
 }
 
@@ -191,18 +223,32 @@ fun PointsScreen(
     Column(modifier = modifier) {
         Text(text = "Points")
 
-        LazyRow() {
+        LazyColumn {
             items(currentRoom.room?.points ?: listOf()) { point ->
                 OutlinedButton(
-                    modifier = modifier.clip(RoundedCornerShape(4.dp)),
+                    modifier = Modifier.padding(0.dp, 4.dp, 0.dp, 4.dp),
                     onClick = {
                         selected = point
-                        roomViewModel.processIntent(RoomIntent.Vote(context = context, roomID = currentRoom.room?.id ?: "", point = point))
+                        roomViewModel.processIntent(
+                            RoomIntent.Vote(
+                                context = context,
+                                roomID = currentRoom.room?.id ?: "",
+                                point = point
+                            )
+                        )
                     },
-                    border = BorderStroke(if (selected == point) 4.dp else 1.dp, if (toggle) RedDark else Grey),
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(
+                        if (selected == point) 4.dp else 1.dp,
+                        if (toggle) RedDark else Grey
+                    ),
                     enabled = toggle
                 ) {
-                    Text(modifier = Modifier.padding(4.dp), color = if (toggle) RedDark else Grey, text = point.toString())
+                    Text(
+                        modifier = Modifier.padding(4.dp),
+                        color = if (toggle) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
+                        text = point.toString()
+                    )
                 }
             }
         }
@@ -217,14 +263,18 @@ fun MembersScreen(
 ) {
     val currentMembers by roomViewModel.currentMembers.collectAsState()
 
-    LazyColumn (modifier = modifier) {
+    LazyColumn(modifier = modifier) {
         item {
             Text(text = "Members(${currentMembers.memberList.size})")
         }
         items(currentMembers.memberList) { item ->
-            val name = item.name
-            Row(modifier = Modifier.padding(8.dp)) {
-                Text(text = "$name : ")
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(0.dp, 8.dp, 0.dp, 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                Text(modifier = Modifier.weight(1f), text = item.name)
 
                 if (currentRoom.room?.averagePoint != null) {
                     Text(
@@ -254,7 +304,12 @@ fun MembersScreen(
 fun RoomScreenPreview() {
     val navController = rememberNavController()
     val roomViewModel: RoomViewModel = viewModel(
-        factory = ViewModelFactory(navController, UserRepositoryImpl(), RoomRepositoryImpl(), MemberRepositoryImpl())
+        factory = ViewModelFactory(
+            navController,
+            UserRepositoryImpl(),
+            RoomRepositoryImpl(),
+            MemberRepositoryImpl()
+        )
     )
     PointPokerTheme {
         RoomLayout(roomViewModel)

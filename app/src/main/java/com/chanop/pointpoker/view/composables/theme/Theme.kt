@@ -36,7 +36,7 @@ private val LightColorScheme = lightColorScheme(
 fun PointPokerTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -54,5 +54,4 @@ fun PointPokerTheme(
         typography = Typography,
         content = content
     )
-    // TODO check why can not use
 }

@@ -76,7 +76,7 @@ class RoomRepositoryImpl : RoomRepository {
         val room = hashMapOf(
             "name" to roomName,
             "leader" to userID,
-            "points" to listOf(0.5,1.0,1.5,2.0,3.0,5.0,8.0)
+            "points" to listOf(0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,8.0)
         )
 
         val db = Firebase.firestore

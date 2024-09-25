@@ -20,8 +20,10 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -39,12 +41,17 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
+import com.chanop.pointpoker.SharedPreferencesUtils
 import com.chanop.pointpoker.intent.HomeIntent
 import com.chanop.pointpoker.model.Room
 import com.chanop.pointpoker.model.RoomModel
@@ -76,7 +83,9 @@ fun HomeScreen(
         }
     }
 
-    var username by remember { mutableStateOf(homeViewModel.getUserName(context)) }
+
+    var username by remember { mutableStateOf(SharedPreferencesUtils.getString(context, SharedPreferencesUtils.userName)) }
+
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -84,22 +93,24 @@ fun HomeScreen(
         Box(
             modifier = modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(innerPadding)
         ) {
             Column {
 
                 Text(
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 32.dp),
-                    text = "Point Poker"
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+                    text = "Point Poker",
+                    style = MaterialTheme.typography.titleLarge
                 )
 
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(horizontal = 24.dp, vertical = 0.dp),
                 ) {
+                    Text(
+                        text = "call me ..."
+                    )
                     TextField(
                         modifier = Modifier.fillMaxWidth()
                             .border(1.dp, Color.Gray, RoundedCornerShape(4.dp))
@@ -109,17 +120,25 @@ fun HomeScreen(
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent
                         ),
-                        placeholder = { Text("Enter your name", color = Color.Gray) },
+                        placeholder = { Text("Enter your name", color = MaterialTheme.colorScheme.secondary) },
                         value = username,
                         onValueChange = { username = it }
                     )
 
                 }
 
+                Divider(
+                    color = MaterialTheme.colorScheme.primary, // หรือสีอื่นๆ ตามต้องการ
+                    thickness = 1.dp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp)
+                )
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 8.dp)
+                        .padding(24.dp, 0.dp)
                 ) {
                     Text(
                         modifier = Modifier.align(Alignment.CenterStart),

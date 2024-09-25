@@ -30,7 +30,6 @@ class RoomViewModel(
     private val memberRepository: MemberRepository,
 ) : ViewModel() {
 
-    //TODO group store
     private val _currentRoom = MutableStateFlow<RoomModel>(RoomModel())
     val currentRoom: StateFlow<RoomModel> = _currentRoom.asStateFlow()
 
@@ -58,7 +57,11 @@ class RoomViewModel(
                             id = snapshot.id,
                             name = snapshot.data?.get("name") as String,
                             leader = snapshot.data?.get("leader") as String,
-                            averagePoint = snapshot.data?.get("average_point") as Double?,
+                            averagePoint = if (snapshot.data?.get("average_point") != null) {
+                                snapshot.data?.get("average_point")?.toString()?.toDouble()
+                            } else {
+                                null
+                            },
                             points = snapshot.data?.get("points") as List<Double>,
                             owner = (snapshot.data?.get("leader") as String) == SharedPreferencesUtils.getString(intent.context, SharedPreferencesUtils.userID)
                         )
@@ -93,7 +96,7 @@ class RoomViewModel(
                     clearRoom()
                     navController.popBackStack()
                 }.onFailure { exception ->
-                    //TODO log
+                    _currentRoom.value = _currentRoom.value.copy(error = "Failed to leave room : firebase error")
                 }
             }
         }
@@ -113,7 +116,7 @@ class RoomViewModel(
                 result.onSuccess {
 
                 }.onFailure { exception ->
-                    //TODO log
+                    _currentRoom.value = _currentRoom.value.copy(error = "Failed to vote : firebase error")
                 }
             }
         }
@@ -129,7 +132,7 @@ class RoomViewModel(
 
                 }.
                 onFailure { exception ->
-                    //TODO log
+                    _currentRoom.value = _currentRoom.value.copy(error = "Failed to average : firebase error")
                 }
             }
         }
@@ -147,7 +150,7 @@ class RoomViewModel(
                     merge(*resetPointTask.toTypedArray()).collect {}
                 }.
                 onFailure { exception ->
-                    // TODO log
+                    _currentRoom.value = _currentRoom.value.copy(error = "Failed to reset : firebase error")
                 }
             }
         }
