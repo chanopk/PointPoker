@@ -21,4 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "PointPoker"
 include(":app")
- 
+include(":instantapp")

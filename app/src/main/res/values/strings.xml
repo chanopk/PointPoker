@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">PointPoker</string>
+    <string name="title_instantapp">Instant App</string>
+    <string name="title_activity_instant">InstantActivity</string>
 </resources>
