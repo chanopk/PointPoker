@@ -109,6 +109,7 @@ fun HomeScreen(
                         .padding(horizontal = 24.dp, vertical = 0.dp),
                 ) {
                     Text(
+                        modifier = Modifier.padding(0.dp, 0.dp, 0.dp, 4.dp),
                         text = "call me ..."
                     )
                     TextField(
