@@ -86,14 +86,6 @@ fun NavControllerView() {
             MemberRepositoryImpl()
         )
     )
-    val createRoomViewModel: CreateRoomViewModel = viewModel(
-        factory = ViewModelFactory(
-            navController,
-            UserRepositoryImpl(),
-            RoomRepositoryImpl(),
-            MemberRepositoryImpl()
-        )
-    )
     val roomViewModel: RoomViewModel = viewModel(
         factory = ViewModelFactory(
             navController,
@@ -108,6 +100,14 @@ fun NavControllerView() {
             HomeScreen(homeViewModel = homeViewModel)
         }
         composable("createroom/{username}") { backStackEntry ->
+            val createRoomViewModel: CreateRoomViewModel = viewModel(
+                factory = ViewModelFactory(
+                    navController,
+                    UserRepositoryImpl(),
+                    RoomRepositoryImpl(),
+                    MemberRepositoryImpl()
+                )
+            )
             val name = backStackEntry.arguments?.getString("username") ?: ""
             CreateRoomScreen(createRoomViewModel = createRoomViewModel, username = name)
         }

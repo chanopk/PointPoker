@@ -88,7 +88,14 @@ fun HomeScreen(
 
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        topBar = {
+            Text(
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 32.dp),
+                text = "Point Poker",
+                style = MaterialTheme.typography.titleLarge
+            )
+        }
     ) { innerPadding ->
         Box(
             modifier = modifier
@@ -96,12 +103,6 @@ fun HomeScreen(
                 .padding(innerPadding)
         ) {
             Column {
-
-                Text(
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
-                    text = "Point Poker",
-                    style = MaterialTheme.typography.titleLarge
-                )
 
                 Column(
                     modifier = Modifier

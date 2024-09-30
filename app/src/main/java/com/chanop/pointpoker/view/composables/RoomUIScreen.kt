@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
+import com.chanop.pointpoker.intent.CreateRoomIntent
 import com.chanop.pointpoker.intent.RoomIntent
 import com.chanop.pointpoker.model.RoomModel
 import com.chanop.pointpoker.repository.MemberRepositoryImpl
@@ -112,8 +113,15 @@ fun RoomLayout(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(0.dp, 16.dp, 0.dp, 0.dp), horizontalArrangement = Arrangement.End
+                    .padding(horizontal = 24.dp, vertical = 32.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                Text(
+                    text = (currentRoom.room?.name ?: ""),
+                    style = MaterialTheme.typography.titleLarge
+                )
+
                 Icon(
                     Icons.Default.Close,
                     modifier = Modifier
@@ -124,11 +132,11 @@ fun RoomLayout(
                                     roomID = currentRoom.room?.id ?: ""
                                 )
                             )
-                        }
-                        .padding(16.dp),
+                        },
                     contentDescription = "Close Button"
                 )
             }
+
         },
         bottomBar = {
             if (currentRoom.room?.owner == true) {
@@ -178,17 +186,9 @@ fun RoomDetailScreen(
         modifier = modifier
             .fillMaxSize()
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(text = (currentRoom.room?.name ?: ""), fontSize = 18.sp)
-        }
-
         Text(
             modifier = Modifier.padding(16.dp),
-            text = "Average Point: ${currentRoom.room?.averagePoint ?: "nothing"}",
+            text = "Average Point: ${currentRoom.room?.averagePoint ?: "Voting..."}",
             style = MaterialTheme.typography.titleLarge
         )
 
@@ -273,7 +273,7 @@ fun MembersScreen(
                     .fillMaxWidth()
                     .padding(0.dp, 8.dp, 0.dp, 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
-                ) {
+            ) {
                 Text(modifier = Modifier.weight(1f), text = item.name)
 
                 if (currentRoom.room?.averagePoint != null) {

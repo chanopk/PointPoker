@@ -16,7 +16,7 @@ interface RoomRepository {
 
     suspend fun getRoomSnapshotFlow(roomID: String): Flow<DocumentSnapshot>
 
-    suspend fun createRoom(userID: String, roomName: String): Flow<Result<Unit>>
+    suspend fun createRoom(userID: String, roomName: String, points: List<Double>): Flow<Result<Unit>>
 
     suspend fun joinRoom(roomID: String, name: String, userID: String): Flow<Result<Unit>>
 
@@ -72,11 +72,11 @@ class RoomRepositoryImpl : RoomRepository {
         }
     }
 
-    override suspend fun createRoom(userID: String, roomName: String): Flow<Result<Unit>> = callbackFlow {
+    override suspend fun createRoom(userID: String, roomName: String, points: List<Double>): Flow<Result<Unit>> = callbackFlow {
         val room = hashMapOf(
             "name" to roomName,
             "leader" to userID,
-            "points" to listOf(0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0,8.0)
+            "points" to points
         )
 
         val db = Firebase.firestore
